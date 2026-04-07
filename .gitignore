@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Docker
+docker-compose.override.yml
+
+# Environment
+.env
+*.env.local

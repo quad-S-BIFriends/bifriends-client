@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:17
+    container_name: bifriends-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bifriends
+      POSTGRES_USER: bifriends
+      POSTGRES_PASSWORD: bifriends
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bifriends -d bifriends"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bifriends-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+volumes:
+  postgres-data:
