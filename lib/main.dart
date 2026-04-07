@@ -1,0 +1,25 @@
+import 'package:flutter/material.dart';
+import 'package:bifriends_client/screens/main_scaffold.dart';
+
+void main() {
+  runApp(const BifriendsApp());
+}
+
+class BifriendsApp extends StatelessWidget {
+  const BifriendsApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Bifriends',
+      theme: ThemeData(
+        scaffoldBackgroundColor: const Color(0xFFF6F4EB), // Warm off-white background
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF75A66B)), // Natural green
+        useMaterial3: true,
+        fontFamily: 'Pretendard', // Fallback to system fonts if not installed, but good conventional default
+      ),
+      home: const MainScaffold(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
