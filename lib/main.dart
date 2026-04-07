@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:bifriends_client/screens/main_scaffold.dart';
+import 'package:bifriends_client/screens/login_screen.dart';
 
 void main() {
   runApp(const BifriendsApp());
@@ -18,7 +18,7 @@ class BifriendsApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Pretendard', // Fallback to system fonts if not installed, but good conventional default
       ),
-      home: const MainScaffold(),
+      home: const LoginScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
