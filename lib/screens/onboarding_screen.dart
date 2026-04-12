@@ -115,8 +115,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // ── Progress Bar ──
-
   Widget _buildProgressBar() {
     return Row(
       children: List.generate(_totalPages, (index) {
@@ -242,7 +240,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // ── Page 1: Name Input ──
+  // ── Onboarding step 1: Name Input ──
 
   Widget _buildNameInputPage() {
     return Padding(
@@ -295,7 +293,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // ── Page 2: Name Confirm ──
+  // ── Onboarding step 2: Name Confirm ──
 
   Widget _buildNameConfirmPage() {
     return Padding(
@@ -318,7 +316,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // ── Page 3: Grade Selection ──
+  // ── Onboarding step 3: Grade Selection ──
 
   Widget _buildGradePage() {
     return Padding(
@@ -459,7 +457,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // ── Page 5: Completion ──
+  // ── Onboarding step5: Completion ──
 
   Widget _buildCompletionPage() {
     return Padding(
