@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'onboarding_screen.dart';
+import 'guardian_consent_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -7,130 +7,98 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F4EB),
+      backgroundColor: const Color(0xFFF6F0E4),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(flex: 2),
-              const Center(
-                child: Text(
-                  '🦫',
-                  style: TextStyle(fontSize: 80),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(flex: 3),
+                Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8DFD0),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text('🦫', style: TextStyle(fontSize: 72)),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Center(
-                child: Text(
-                  'Bifriends',
+                const SizedBox(height: 32),
+                const Text(
+                  '안녕! 나는 레오야',
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: 26,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF4A3E39),
+                    color: Color(0xFF6B4423),
+                    letterSpacing: -0.5,
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Center(
-                child: Text(
-                  '우리들의 즐거운 공부 친구',
+                const SizedBox(height: 16),
+                const Text(
+                  '너랑 같이 공부하고 이야기하고 싶어!\n로그인해서 나랑 만나볼래?',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF8D837D),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF8A7E74),
+                    height: 1.6,
                   ),
                 ),
-              ),
-              const Spacer(flex: 1),
-              _buildSocialLoginButton(
-                icon: Icons.chat_bubble,
-                iconColor: Colors.black,
-                label: '카카오로 시작하기',
-                backgroundColor: const Color(0xFFFEE500),
-                textColor: Colors.black87,
-                onPressed: () {
-                  // Temporarily go to Onboarding to simulate no user info
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildSocialLoginButton(
-                icon: Icons.g_mobiledata_rounded,
-                iconColor: Colors.black87,
-                label: '구글로 시작하기',
-                backgroundColor: Colors.white,
-                textColor: Colors.black87,
-                onPressed: () {
-                  // Wait, let's just go to onboarding for demo purposes
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-                  );
-                },
-                child: const Text(
-                  '처음이신가요? 온보딩 체험하기',
-                  style: TextStyle(
-                    color: Color(0xFF8D837D),
-                    fontWeight: FontWeight.w600,
-                    decoration: TextDecoration.underline,
+                const Spacer(flex: 2),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3D6B35),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      elevation: 0,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GuardianConsentScreen(),
+                        ),
+                      );
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '→]',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          '구글로 시작하기',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const Spacer(flex: 2),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSocialLoginButton({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required Color backgroundColor,
-    required Color textColor,
-    required VoidCallback onPressed,
-  }) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: backgroundColor,
-        foregroundColor: textColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        elevation: 0,
-      ),
-      onPressed: onPressed,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: iconColor),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
+                const Spacer(flex: 3),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
