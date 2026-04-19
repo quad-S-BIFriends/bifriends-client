@@ -40,7 +40,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MainScaffold()),
+        MaterialPageRoute(
+          builder: (context) => const MainScaffold(isFirstVisit: true),
+        ),
       );
     }
   }
@@ -72,7 +74,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar: back button + progress bar
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
               child: Row(
@@ -91,7 +92,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            // Pages
             Expanded(
               child: PageView(
                 controller: _pageController,
