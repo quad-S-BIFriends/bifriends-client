@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'onboarding_screen.dart';
+import 'parent_setup_screen.dart';
 
 class GuardianConsentScreen extends StatefulWidget {
   const GuardianConsentScreen({super.key});
@@ -218,7 +218,7 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      const OnboardingScreen(),
+                                      const ParentSetupScreen(),
                                 ),
                               );
                             }
