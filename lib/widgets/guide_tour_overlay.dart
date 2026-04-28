@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
-enum GuideTourStep { welcomePopup, learningTab, chatTab, reportTab, heartTab }
+enum GuideTourStep { welcomePopup, learningTab, chatTab, heartTab }
 
 class GuideTourStepInfo {
   final String title;
@@ -36,12 +36,7 @@ const Map<GuideTourStep, GuideTourStepInfo> guideTourStepInfoMap = {
     buttonText: '다음',
     icon: Icons.chat_bubble,
   ),
-  GuideTourStep.reportTab: GuideTourStepInfo(
-    title: '리포트 📊',
-    description: '내가 얼마나 잘하고 있는지\n한눈에 볼 수 있어!',
-    buttonText: '다음',
-    icon: Icons.bar_chart,
-  ),
+
   GuideTourStep.heartTab: GuideTourStepInfo(
     title: '마음 💚',
     description: '오늘 내 기분을 기록하고\n감정을 배울 수 있어!',
