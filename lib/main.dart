@@ -13,7 +13,7 @@ class BifriendsApp extends StatelessWidget {
     return MaterialApp(
       title: 'Bifriends',
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF6F4EB), // Warm off-white background
+        scaffoldBackgroundColor: const Color(0xFFF5F0E8), // Warm off-white background
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF75A66B)), // Natural green
         useMaterial3: true,
         fontFamily: 'Pretendard', // Fallback to system fonts if not installed, but good conventional default

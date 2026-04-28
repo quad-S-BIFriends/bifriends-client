@@ -100,7 +100,7 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F0E4),
+
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
