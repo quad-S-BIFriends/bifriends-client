@@ -148,7 +148,6 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4A3E39),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -807,8 +806,6 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
         child: ElevatedButton(
           onPressed: (_showSuccessOverlay || !canProceed) ? null : _nextStep,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF75A66B),
-            disabledBackgroundColor: const Color(0xFFC8E0C1),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),

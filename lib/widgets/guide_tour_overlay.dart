@@ -229,8 +229,6 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF75A66B),
-                    foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -339,8 +337,7 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isLastStep
                         ? const Color(0xFFF07D4F)
-                        : const Color(0xFF75A66B),
-                    foregroundColor: Colors.white,
+                        : null,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(

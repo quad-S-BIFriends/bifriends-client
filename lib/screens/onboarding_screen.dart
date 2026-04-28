@@ -233,10 +233,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: isActive
-              ? const Color(0xFF738A58)
-              : const Color(0xFFC5D4B6),
-          foregroundColor: Colors.white,
           elevation: isActive ? 4 : 0,
           shadowColor: Colors.black.withValues(alpha: 0.2),
           padding: const EdgeInsets.symmetric(vertical: 18),

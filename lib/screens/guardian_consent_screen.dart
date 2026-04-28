@@ -75,8 +75,6 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3D5A3C),
-                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -208,10 +206,6 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _canProceed
-                            ? const Color(0xFF3D5A3C)
-                            : const Color(0xFFD5CDC3),
-                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
