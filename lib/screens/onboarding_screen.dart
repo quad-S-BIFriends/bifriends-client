@@ -459,10 +459,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: 32),
           Expanded(
             child: GridView.count(
-              crossAxisCount: 2,
+              crossAxisCount: 3,
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
-              childAspectRatio: 1.2,
+              childAspectRatio: 0.9,
               children: _interestItems.map((item) {
                 final id = item['id'] as String;
                 final name = item['name'] as String;
@@ -504,17 +504,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       children: [
                         Icon(
                           item['icon'] as IconData,
-                          size: 32,
+                          size: 28,
                           color: isSelected
                               ? Colors.white
                               : const Color(0xFF5C4A3A),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         Text(
                           name,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: isSelected
                                 ? Colors.white
