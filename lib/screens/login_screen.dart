@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:bifriends_client/services/auth_service.dart';
 import 'package:bifriends_client/screens/home_screen.dart';
 import 'guardian_consent_screen.dart';
+import 'mode_selection_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (response.onboardingCompleted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const ModeSelectionScreen()),
           );
         } else {
           Navigator.push(

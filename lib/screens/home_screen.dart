@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/todo_model.dart';
 import '../widgets/falling_leaves.dart';
+import '../services/member_service.dart';
 import 'closet_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -13,7 +14,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final String _userName = '치치';
+  String _userName = '친구';
+  bool _isLoadingUser = true;
   final int _consecutiveDays = 3;
   final int _grassCount = 150;
   final int _currentLevel = 3;
@@ -21,11 +23,31 @@ class _HomeScreenState extends State<HomeScreen> {
   final int _nextLevelGrass = 200;
 
   late List<TodoItem> _todos;
+  final _memberService = MemberService();
 
   @override
   void initState() {
     super.initState();
     _todos = TodoItem.generateDailyTodos();
+    _fetchUserInfo();
+  }
+
+  Future<void> _fetchUserInfo() async {
+    try {
+      final member = await _memberService.getMe();
+      if (mounted) {
+        setState(() {
+          _userName = member.nickname ?? member.name;
+          _isLoadingUser = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingUser = false;
+        });
+      }
+    }
   }
 
   String _generateGreeting() {
@@ -249,8 +271,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Text('🦫', style: TextStyle(fontSize: 72)),
+                child: Center(
+                  child: Image.asset(
+                    'assets/images/leo_defaultface.png',
+                    height: 100,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Text('🦫', style: TextStyle(fontSize: 72)),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),

@@ -227,15 +227,15 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(Icons.phone_android, size: 20),
-                          SizedBox(width: 8),
                           Text(
-                            '보호자 휴대폰 인증하기',
+                            '부모님 비밀번호 설정하기',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
+                          SizedBox(width: 8),
+                          Icon(Icons.arrow_forward, size: 20),
                         ],
                       ),
                     ),
