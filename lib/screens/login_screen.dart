@@ -26,13 +26,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response != null) {
         if (response.onboardingCompleted) {
-          // 온보딩이 완료된 경우 홈 화면으로 이동
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         } else {
-          // 온보딩이 완료되지 않은 경우 보호자 동의 화면으로 이동
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -43,9 +41,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('로그인 중 오류가 발생했습니다: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('로그인 중 오류가 발생했습니다: $e')));
     } finally {
       if (mounted) {
         setState(() {
