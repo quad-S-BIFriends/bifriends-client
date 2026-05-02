@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:bifriends_client/screens/login_screen.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
+  }
   runApp(const BifriendsApp());
 }
 
@@ -13,10 +23,10 @@ class BifriendsApp extends StatelessWidget {
     return MaterialApp(
       title: 'Bifriends',
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF5F0E8), // Warm off-white background
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF75A66B)), // Natural green
+        scaffoldBackgroundColor: const Color(0xFFF5F0E8),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF75A66B)),
         useMaterial3: true,
-        fontFamily: 'Pretendard', // Fallback to system fonts if not installed, but good conventional default
+        fontFamily: 'Pretendard',
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF3D5A3C),
