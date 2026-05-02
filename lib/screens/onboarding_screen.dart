@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/onboarding_service.dart';
 import 'main_scaffold.dart';
 
 class SpeechBubbleShape extends ShapeBorder {
@@ -41,8 +42,10 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
+  final OnboardingService _onboardingService = OnboardingService();
   int _currentPage = 0;
   static const int _totalPages = 6;
+  bool _isLoading = false;
 
   final TextEditingController _nameController = TextEditingController();
   int? _selectedGrade;
@@ -52,34 +55,67 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   static const int _maxInterests = 3;
 
   final List<Map<String, dynamic>> _interestItems = const [
-    {'name': '운동', 'icon': Icons.fitness_center},
-    {'name': '음악', 'icon': Icons.music_note},
-    {'name': '게임', 'icon': Icons.sports_esports},
-    {'name': '공부', 'icon': Icons.menu_book},
-    {'name': '그림', 'icon': Icons.palette},
-    {'name': '책', 'icon': Icons.book},
+    {'id': 'DINOSAUR', 'name': '공룡', 'icon': Icons.pets},
+    {'id': 'ANIMAL', 'name': '동물', 'icon': Icons.cruelty_free},
+    {'id': 'SPACE', 'name': '우주', 'icon': Icons.rocket_launch},
+    {'id': 'SPORTS', 'name': '운동', 'icon': Icons.fitness_center},
+    {'id': 'KPOP_MUSIC', 'name': '음악', 'icon': Icons.music_note},
+    {'id': 'GAME', 'name': '게임', 'icon': Icons.sports_esports},
+    {'id': 'COOKING', 'name': '요리', 'icon': Icons.restaurant_menu},
+    {'id': 'CRAFTING', 'name': '만들기', 'icon': Icons.palette},
+    {'id': 'SCIENCE', 'name': '과학', 'icon': Icons.science},
   ];
 
   final List<Map<String, dynamic>> _giftItems = const [
-    {'id': 'hat', 'name': '모자', 'icon': Icons.adjust},
-    {'id': 'top_hat', 'name': '정장\n모자', 'icon': Icons.auto_awesome},
-    {'id': 'crown', 'name': '왕관', 'icon': Icons.workspace_premium},
-    {'id': 'flower', 'name': '꽃', 'icon': Icons.filter_vintage},
+    {'id': 'GIFT_1', 'name': '모자', 'icon': Icons.adjust, 'image': 'hat'},
+    {'id': 'GIFT_2', 'name': '정장\n모자', 'icon': Icons.auto_awesome, 'image': 'top_hat'},
+    {'id': 'GIFT_3', 'name': '왕관', 'icon': Icons.workspace_premium, 'image': 'crown'},
+    {'id': 'GIFT_4', 'name': '꽃', 'icon': Icons.filter_vintage, 'image': 'flower'},
   ];
 
-  void _nextPage() {
-    if (_currentPage < _totalPages - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const MainScaffold(isFirstVisit: true),
-        ),
-      );
+  Future<void> _nextPage() async {
+    if (_isLoading) return;
+
+    try {
+      setState(() => _isLoading = true);
+
+      if (_currentPage == 1) {
+        await _onboardingService.updateProfile(
+          nickname: _userName,
+          grade: _selectedGrade!,
+        );
+      } else if (_currentPage == 2) {
+        await _onboardingService.updateInterests(
+          interests: _selectedInterests,
+        );
+      } else if (_currentPage == 4) {
+        await _onboardingService.selectGift(
+          itemType: _selectedGift!,
+        );
+      }
+
+      setState(() => _isLoading = false);
+
+      if (_currentPage < _totalPages - 1) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MainScaffold(isFirstVisit: true),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
     }
   }
 
@@ -138,7 +174,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     size: 20,
                     color: Color(0xFF5C4A3A),
                   ),
-                  onPressed: _prevPage,
+                  onPressed: _isLoading ? null : _prevPage,
+                ),
+              ),
+            if (_isLoading)
+              Container(
+                color: Colors.black.withValues(alpha: 0.2),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF75A66B)),
+                  ),
                 ),
               ),
           ],
@@ -240,11 +285,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             borderRadius: BorderRadius.circular(30),
           ),
         ),
-        onPressed: isActive ? onPressed : null,
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
+        onPressed: (isActive && !_isLoading) ? onPressed : null,
+        child: _isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                text,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
       ),
     );
   }
@@ -410,16 +464,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               crossAxisSpacing: 16,
               childAspectRatio: 1.2,
               children: _interestItems.map((item) {
+                final id = item['id'] as String;
                 final name = item['name'] as String;
-                final isSelected = _selectedInterests.contains(name);
+                final isSelected = _selectedInterests.contains(id);
                 final canSelect = _selectedInterests.length < _maxInterests;
                 return GestureDetector(
                   onTap: () {
                     setState(() {
                       if (isSelected) {
-                        _selectedInterests.remove(name);
+                        _selectedInterests.remove(id);
                       } else if (canSelect) {
-                        _selectedInterests.add(name);
+                        _selectedInterests.add(id);
                       }
                     });
                   },
@@ -503,7 +558,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final particle = _hasJongseong(displayName) ? '아' : '야';
     String? currentImage;
     if (_selectedGift != null) {
-      currentImage = 'assets/images/leo_${_selectedGift}.png';
+      final selectedItem = _giftItems.firstWhere((item) => item['id'] == _selectedGift);
+      currentImage = 'assets/images/leo_${selectedItem['image']}.png';
     }
     return _buildPageWrapper(
       step: 4,
@@ -587,7 +643,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final particle = _hasJongseong(displayName) ? '이의' : '의';
     String? finalImage;
     if (_selectedGift != null) {
-      finalImage = 'assets/images/leo_${_selectedGift}.png';
+      final selectedItem = _giftItems.firstWhere((item) => item['id'] == _selectedGift);
+      finalImage = 'assets/images/leo_${selectedItem['image']}.png';
     }
     return _buildPageWrapper(
       step: 5,
