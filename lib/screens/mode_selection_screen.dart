@@ -65,15 +65,15 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFFFFF7E2),
+        backgroundColor: Color(0xFFF5F0E8),
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF75A66B)),
+          child: CircularProgressIndicator(color: Color(0xFF8B9D8A)),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF7E2),
+      backgroundColor: const Color(0xFFF5F0E8),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -97,7 +97,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF8A7E74),
+                  color: Color(0xFF6B4423),
                 ),
               ),
               if (_errorMessage.isNotEmpty) ...[
@@ -142,9 +142,9 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
               ElevatedButton(
                 onPressed: _selectedIndex != null ? _onStartPressed : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF75A66B),
+                  backgroundColor: const Color(0xFF3D5A3C),
                   disabledBackgroundColor: const Color(
-                    0xFF75A66B,
+                    0xFF8B9D8A,
                   ).withOpacity(0.4),
                   foregroundColor: Colors.white,
                   disabledForegroundColor: Colors.white.withOpacity(0.8),
@@ -191,14 +191,14 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
               borderRadius: BorderRadius.circular(32),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFF75A66B)
+                    ? const Color(0xFF3D5A3C)
                     : Colors.transparent,
                 width: 3,
               ),
               boxShadow: [
                 if (isSelected)
                   BoxShadow(
-                    color: const Color(0xFF75A66B).withOpacity(0.3),
+                    color: const Color(0xFF3D5A3C).withOpacity(0.3),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   )
@@ -219,8 +219,8 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: isSelected
-                  ? const Color(0xFF5A3D2B)
-                  : const Color(0xFF8A7E74),
+                  ? const Color(0xFF6B4423)
+                  : const Color(0xFF8B6D55),
             ),
           ),
         ],
