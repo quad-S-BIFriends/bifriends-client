@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/todo_model.dart';
 import '../widgets/falling_leaves.dart';
 import '../services/member_service.dart';
@@ -119,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF75A66B), Color(0xFF5D8F53)],
+                colors: [Color(0xFF8B9D8A), Color(0xFF3D5A3C)],
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
@@ -178,10 +179,10 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Text(
         _generateGreeting(),
-        style: const TextStyle(
-          fontSize: 22,
+        style: GoogleFonts.gaegu(
+          fontSize: 24,
           fontWeight: FontWeight.w800,
-          color: Color(0xFF4A3E39),
+          color: const Color(0xFF6B4423),
           height: 1.4,
         ),
       ),
@@ -352,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF75A66B),
+                    color: Color(0xFF8B9D8A),
                   ),
                 ),
               ],
@@ -373,12 +374,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 12,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF8BC34A), Color(0xFF75A66B)],
+                        colors: [Color(0xFF8B9D8A), Color(0xFF3D5A3C)],
                       ),
                       borderRadius: BorderRadius.circular(6),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF75A66B).withValues(alpha: 0.3),
+                          color: const Color(0xFF8B9D8A).withValues(alpha: 0.3),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
