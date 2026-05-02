@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _navigateToProfile() {
-    widget.onNavigateToTab?.call(4);
+    widget.onNavigateToTab?.call(3);
   }
 
   void _navigateToCloset() {
