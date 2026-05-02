@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../services/onboarding_service.dart';
 import 'main_scaffold.dart';
 
@@ -92,6 +93,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         await _onboardingService.selectGift(
           itemType: _selectedGift!,
         );
+      } else if (_currentPage == 5) {
+        // 권한 요청
+        final Map<Permission, PermissionStatus> statuses = await [
+          Permission.notification,
+          Permission.microphone,
+        ].request();
+
+        final bool notificationEnabled = statuses[Permission.notification]?.isGranted ?? false;
+        final bool microphoneEnabled = statuses[Permission.microphone]?.isGranted ?? false;
+
+        await _onboardingService.updatePermissions(
+          notificationEnabled: notificationEnabled,
+          microphoneEnabled: microphoneEnabled,
+        );
+
+        await _onboardingService.completeOnboarding();
       }
 
       setState(() => _isLoading = false);

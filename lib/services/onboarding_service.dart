@@ -67,4 +67,32 @@ class OnboardingService {
       throw Exception('선물 선택 실패: ${response.statusCode}');
     }
   }
+  Future<void> updatePermissions({
+    required bool notificationEnabled,
+    required bool microphoneEnabled,
+  }) async {
+    final url = Uri.parse('$_baseUrl/api/v1/onboarding/permissions');
+    final headers = await _getHeaders();
+    final body = jsonEncode({
+      'notificationEnabled': notificationEnabled,
+      'microphoneEnabled': microphoneEnabled,
+    });
+
+    final response = await http.patch(url, headers: headers, body: body);
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('권한 업데이트 실패: ${response.statusCode}');
+    }
+  }
+
+  Future<void> completeOnboarding() async {
+    final url = Uri.parse('$_baseUrl/api/v1/onboarding/complete');
+    final headers = await _getHeaders();
+
+    final response = await http.post(url, headers: headers, body: jsonEncode({}));
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('온보딩 완료 처리 실패: ${response.statusCode}');
+    }
+  }
 }
