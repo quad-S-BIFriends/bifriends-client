@@ -69,24 +69,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   final List<Map<String, dynamic>> _giftItems = const [
-    {'id': 'GIFT_1', 'name': '모자', 'icon': Icons.adjust, 'image': 'hat'},
+    {'id': 'GIFT_1', 'name': '책', 'icon': Icons.book, 'image': 'studying'},
     {
       'id': 'GIFT_2',
-      'name': '정장\n모자',
-      'icon': Icons.auto_awesome,
-      'image': 'top_hat',
+      'name': '리본',
+      'icon': Icons.auto_awesome_mosaic,
+      'image': 'ribbon',
     },
     {
       'id': 'GIFT_3',
-      'name': '왕관',
-      'icon': Icons.workspace_premium,
-      'image': 'crown',
-    },
-    {
-      'id': 'GIFT_4',
       'name': '꽃',
       'icon': Icons.filter_vintage,
       'image': 'flower',
+    },
+    {
+      'id': 'GIFT_4',
+      'name': '선글라스',
+      'icon': Icons.sunny,
+      'image': 'sunglasses',
     },
   ];
 
@@ -523,9 +523,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.textSub
-                          : Colors.white,
+                      color: isSelected ? AppColors.textSub : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: isSelected
@@ -547,9 +545,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Icon(
                           item['icon'] as IconData,
                           size: 28,
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.textMain,
+                          color: isSelected ? Colors.white : AppColors.textMain,
                         ),
                         const SizedBox(height: 8),
                         Text(
