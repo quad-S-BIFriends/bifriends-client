@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 enum GuideTourStep { welcomePopup, learningTab, chatTab, heartTab }
 
@@ -150,7 +151,7 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF75A66B).withValues(alpha: 0.5),
+                        color: AppColors.primary.withValues(alpha: 0.5),
                         blurRadius: 20,
                         spreadRadius: 4,
                       ),
@@ -181,7 +182,7 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF75A66B).withValues(alpha: 0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 blurRadius: 30,
                 spreadRadius: 2,
                 offset: const Offset(0, 8),
@@ -205,7 +206,7 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF4A3E39),
+                  color: AppColors.textMain,
                 ),
               ),
               const SizedBox(height: 12),
@@ -215,7 +216,7 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF8D837D),
+                  color: AppColors.textSub,
                   height: 1.6,
                 ),
               ),
@@ -283,7 +284,7 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
                 ),
                 child: Icon(
                   stepInfo.icon,
-                  color: const Color(0xFF75A66B),
+                  color: AppColors.primary,
                   size: 28,
                 ),
               ),
@@ -293,7 +294,7 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF4A3E39),
+                  color: AppColors.textMain,
                 ),
               ),
               const SizedBox(height: 8),
@@ -303,7 +304,7 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF8D837D),
+                  color: AppColors.textSub,
                   height: 1.5,
                 ),
               ),
@@ -318,7 +319,7 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
                       color: index == stepIndex
-                          ? const Color(0xFF75A66B)
+                          ? AppColors.primary
                           : const Color(0xFFE0D8CC),
                       borderRadius: BorderRadius.circular(4),
                     ),

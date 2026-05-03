@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/learning_roadmap.dart';
+import '../theme/app_colors.dart';
 
 class LearningScreen extends StatefulWidget {
   const LearningScreen({super.key});
@@ -12,22 +13,13 @@ class _LearningScreenState extends State<LearningScreen> {
   int _selectedCategoryIndex = 0;
 
   final List<Map<String, dynamic>> _categories = [
-    {
-      'title': '생각하는 힘\n키우기',
-      'icon': '🧠',
-      'locked': false,
-    },
-    {
-      'title': '말하는 힘\n키우기',
-      'icon': '🗣️',
-      'locked': true,
-    },
+    {'title': '생각하는 힘\n키우기', 'icon': '🧠', 'locked': false},
+    {'title': '말하는 힘\n키우기', 'icon': '🗣️', 'locked': true},
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -43,7 +35,7 @@ class _LearningScreenState extends State<LearningScreen> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFFB1AA9E),
+                          color: AppColors.textSub,
                         ),
                       ),
                     ),
@@ -65,7 +57,7 @@ class _LearningScreenState extends State<LearningScreen> {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF4A3E39),
+              color: AppColors.textMain,
             ),
           ),
           SizedBox(height: 6),
@@ -74,7 +66,7 @@ class _LearningScreenState extends State<LearningScreen> {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF8D837D),
+              color: AppColors.textSub,
             ),
           ),
         ],
@@ -109,7 +101,9 @@ class _LearningScreenState extends State<LearningScreen> {
                 color: isSelected ? const Color(0xFFFFF7E2) : Colors.white,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isSelected ? const Color(0xFFF3C74B) : const Color(0xFFF0EBE1),
+                  color: isSelected
+                      ? const Color(0xFFF3C74B)
+                      : AppColors.borderLight,
                   width: isSelected ? 2 : 1,
                 ),
                 boxShadow: [
@@ -130,22 +124,37 @@ class _LearningScreenState extends State<LearningScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isLocked ? const Color(0xFFF5F3ED) : Colors.white,
+                          color: isLocked
+                              ? const Color(0xFFF5F3ED)
+                              : Colors.white,
                           shape: BoxShape.circle,
-                          boxShadow: isLocked ? null : [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.06),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            )
-                          ],
+                          boxShadow: isLocked
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                         ),
-                        child: Text(category['icon'], style: const TextStyle(fontSize: 20)),
+                        child: Text(
+                          category['icon'],
+                          style: const TextStyle(fontSize: 20),
+                        ),
                       ),
                       if (isLocked)
-                        const Icon(Icons.lock, color: Color(0xFFDCD5CA), size: 18)
+                        const Icon(
+                          Icons.lock,
+                          color: Color(0xFFDCD5CA),
+                          size: 18,
+                        )
                       else if (isSelected)
-                        const Icon(Icons.check_circle, color: Color(0xFFF3C74B), size: 20),
+                        const Icon(
+                          Icons.check_circle,
+                          color: Color(0xFFF3C74B),
+                          size: 20,
+                        ),
                     ],
                   ),
                   const Spacer(),
@@ -154,7 +163,7 @@ class _LearningScreenState extends State<LearningScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: isLocked ? const Color(0xFFB1AA9E) : const Color(0xFF4A3E39),
+                      color: isLocked ? AppColors.textSub : AppColors.textMain,
                       height: 1.3,
                     ),
                   ),

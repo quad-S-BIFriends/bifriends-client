@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class RocketAnimation extends StatefulWidget {
   final VoidCallback onComplete;
@@ -178,7 +179,7 @@ class _RocketAnimationState extends State<RocketAnimation>
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF75A66B).withValues(alpha: 0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                       blurRadius: 20,
                       spreadRadius: 2,
                     ),
@@ -192,7 +193,7 @@ class _RocketAnimationState extends State<RocketAnimation>
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF4A3E39),
+                        color: AppColors.textMain,
                       ),
                     ),
                     SizedBox(height: 8),
@@ -201,7 +202,7 @@ class _RocketAnimationState extends State<RocketAnimation>
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF8D837D),
+                        color: AppColors.textSub,
                       ),
                     ),
                   ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class ClosetScreen extends StatelessWidget {
   const ClosetScreen({super.key});
@@ -11,7 +12,7 @@ class ClosetScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF4A3E39)),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textMain),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -19,7 +20,7 @@ class ClosetScreen extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF4A3E39),
+            color: AppColors.textMain,
           ),
         ),
         centerTitle: true,
@@ -42,7 +43,7 @@ class ClosetScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF8D837D),
+                color: AppColors.textSub,
               ),
             ),
             const SizedBox(height: 8),
@@ -52,7 +53,7 @@ class ClosetScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFFB1AA9E),
+                color: AppColors.textSub,
                 height: 1.5,
               ),
             ),

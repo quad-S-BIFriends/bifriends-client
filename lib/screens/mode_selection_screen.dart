@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/member_model.dart';
 import '../services/member_service.dart';
+import '../theme/app_colors.dart';
 import 'main_scaffold.dart';
 
 class ModeSelectionScreen extends StatefulWidget {
@@ -55,7 +56,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('부모님 대시보드는 준비 중입니다.'),
-          backgroundColor: Color(0xFF8B6D55),
+          backgroundColor: AppColors.primary,
         ),
       );
     }
@@ -65,15 +66,15 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF5F0E8),
+        backgroundColor: AppColors.background,
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF8B9D8A)),
+          child: CircularProgressIndicator(color: AppColors.primary),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E8),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -87,7 +88,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 44,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF5A3D2B),
+                  color: AppColors.textMain,
                 ),
               ),
               const SizedBox(height: 12),
@@ -97,7 +98,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B4423),
+                  color: AppColors.textMain,
                 ),
               ),
               if (_errorMessage.isNotEmpty) ...[
@@ -133,7 +134,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                     child: const Icon(
                       Icons.shield_outlined,
                       size: 60,
-                      color: Color(0xFF8B6D55),
+                      color: AppColors.textSub,
                     ),
                   ),
                 ],
@@ -142,10 +143,8 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
               ElevatedButton(
                 onPressed: _selectedIndex != null ? _onStartPressed : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3D5A3C),
-                  disabledBackgroundColor: const Color(
-                    0xFF8B9D8A,
-                  ).withOpacity(0.4),
+                  backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.primaryDisabled.withOpacity(0.4),
                   foregroundColor: Colors.white,
                   disabledForegroundColor: Colors.white.withOpacity(0.8),
                   padding: const EdgeInsets.symmetric(vertical: 18),
@@ -187,18 +186,18 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: const Color(0xFFF9F6F0),
+              color: AppColors.cardLight,
               borderRadius: BorderRadius.circular(32),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFF3D5A3C)
+                    ? AppColors.primary
                     : Colors.transparent,
                 width: 3,
               ),
               boxShadow: [
                 if (isSelected)
                   BoxShadow(
-                    color: const Color(0xFF3D5A3C).withOpacity(0.3),
+                    color: AppColors.primary.withOpacity(0.3),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   )
@@ -219,8 +218,8 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: isSelected
-                  ? const Color(0xFF6B4423)
-                  : const Color(0xFF8B6D55),
+                  ? AppColors.textMain
+                  : AppColors.textSub,
             ),
           ),
         ],

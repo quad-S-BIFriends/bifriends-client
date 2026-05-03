@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/learning_roadmap.dart' show LevelData;
+import '../theme/app_colors.dart';
 
 class LearningActivityScreen extends StatefulWidget {
   final LevelData levelData;
@@ -106,11 +107,11 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF75A66B),
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF75A66B).withValues(alpha: 0.3),
+                        color: AppColors.primary.withValues(alpha: 0.3),
                         blurRadius: 16,
                         spreadRadius: 4,
                       ),
@@ -126,7 +127,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF4A3E39),
+                    color: AppColors.textMain,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -135,7 +136,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF8D837D),
+                    color: AppColors.textSub,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -206,7 +207,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                             color: Colors.white,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0xFF75A66B),
+                              color: AppColors.primary,
                               width: 4,
                             ),
                             boxShadow: [
@@ -221,7 +222,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                           ),
                           child: const Icon(
                             Icons.check,
-                            color: Color(0xFF75A66B),
+                            color: AppColors.primary,
                             size: 60,
                           ),
                         ),
@@ -231,7 +232,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF75A66B),
+                            color: AppColors.primary,
                           ),
                         ),
                       ],
@@ -251,7 +252,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF4A3E39)),
+            icon: const Icon(Icons.arrow_back, color: AppColors.textMain),
             onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 8),
@@ -274,7 +275,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                       width:
                           constraints.maxWidth * (_currentStep / _totalSteps),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF75A66B),
+                        color: AppColors.primary,
                         borderRadius: BorderRadius.circular(5),
                       ),
                     );
@@ -289,7 +290,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF8D837D),
+              color: AppColors.textSub,
             ),
           ),
           const SizedBox(width: 8),
@@ -333,7 +334,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF4A3E39),
+              color: AppColors.textMain,
               height: 1.4,
             ),
             textAlign: TextAlign.center,
@@ -358,7 +359,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFF0EBE1), width: 1),
+              border: Border.all(color: AppColors.borderLight, width: 1),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.03),
@@ -401,7 +402,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
         style: const TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF8D837D),
+          color: AppColors.textSub,
         ),
       ),
     );
@@ -439,7 +440,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text(
                       '아래 단어를 순서대로 탭하세요',
-                      style: TextStyle(color: Color(0xFFB1AA9E), fontSize: 14),
+                      style: TextStyle(color: AppColors.textSub, fontSize: 14),
                     ),
                   ),
                 for (final word in _selectedSentence)
@@ -489,7 +490,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
         color: isLight ? Colors.white : const Color(0xFFF9F7F3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isLight ? const Color(0xFFDCD5CA) : const Color(0xFFF0EBE1),
+          color: isLight ? const Color(0xFFDCD5CA) : AppColors.borderLight,
           width: 1,
         ),
         boxShadow: isLight
@@ -507,7 +508,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w700,
-          color: isLight ? const Color(0xFF4A3E39) : const Color(0xFF75A66B),
+          color: isLight ? AppColors.textMain : AppColors.primary,
         ),
       ),
     );
@@ -531,7 +532,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF4A3E39),
+                  color: AppColors.textMain,
                 ),
               ),
               Container(
@@ -544,7 +545,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _selectedParticle != null
-                        ? const Color(0xFF75A66B)
+                        ? AppColors.primary
                         : const Color(0xFFDCD5CA),
                     width: 2,
                   ),
@@ -555,7 +556,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF75A66B),
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
@@ -565,7 +566,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF4A3E39),
+                  color: AppColors.textMain,
                 ),
               ),
             ],
@@ -598,18 +599,18 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
         width: 64,
         height: 64,
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF75A66B) : Colors.white,
+          color: isSelected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF75A66B)
+                ? AppColors.primary
                 : const Color(0xFFDCD5CA),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF75A66B).withValues(alpha: 0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -622,7 +623,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: isSelected ? Colors.white : const Color(0xFF4A3E39),
+              color: isSelected ? Colors.white : AppColors.textMain,
             ),
           ),
         ),
@@ -676,19 +677,19 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
               height: _isRecording ? 90 : 80,
               decoration: BoxDecoration(
                 color: _hasReadVoice
-                    ? const Color(0xFF4A3E39)
-                    : const Color(0xFF75A66B),
+                    ? AppColors.textMain
+                    : AppColors.primary,
                 shape: BoxShape.circle,
                 boxShadow: [
                   if (_isRecording)
                     BoxShadow(
-                      color: const Color(0xFF75A66B).withValues(alpha: 0.5),
+                      color: AppColors.primary.withValues(alpha: 0.5),
                       blurRadius: 20,
                       spreadRadius: 10,
                     )
                   else
                     BoxShadow(
-                      color: const Color(0xFF75A66B).withValues(alpha: 0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                       blurRadius: 16,
                       spreadRadius: 4,
                     ),
@@ -708,8 +709,8 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: _hasReadVoice
-                  ? const Color(0xFF75A66B)
-                  : const Color(0xFFB1AA9E),
+                  ? AppColors.primary
+                  : AppColors.textSub,
             ),
           ),
         ],
@@ -752,7 +753,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF4A3E39),
+                color: AppColors.textMain,
               ),
               decoration: InputDecoration(
                 hintText: '?',
@@ -790,7 +791,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          top: BorderSide(color: const Color(0xFFF0EBE1), width: 1),
+          top: BorderSide(color: AppColors.borderLight, width: 1),
         ),
         boxShadow: [
           BoxShadow(

@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../screens/learning_activity_screen.dart';
+import '../theme/app_colors.dart';
 
 enum LevelStatus { completed, current, locked }
 
@@ -117,7 +118,7 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
     final bool isLocked = level.status == LevelStatus.locked;
 
     final Color borderColor = isCompleted
-        ? const Color(0xFF75A66B)
+        ? AppColors.primary
         : isCurrent
         ? const Color(0xFFF3C74B)
         : const Color(0xFFDCD5CA);
@@ -155,7 +156,7 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
                   ),
                 if (isCompleted)
                   BoxShadow(
-                    color: const Color(0xFF75A66B).withValues(alpha: 0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -163,11 +164,11 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
             ),
             child: Center(
               child: isCompleted
-                  ? const Icon(Icons.check, color: Color(0xFF75A66B), size: 36)
+                  ? const Icon(Icons.check, color: AppColors.primary, size: 36)
                   : isLocked
                   ? const Icon(
                       Icons.lock_outline,
-                      color: Color(0xFFB1AA9E),
+                      color: AppColors.textSub,
                       size: 30,
                     )
                   : const Icon(
@@ -185,7 +186,7 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
               borderRadius: BorderRadius.circular(12),
               border: isLocked
                   ? null
-                  : Border.all(color: const Color(0xFFF0EBE1), width: 1),
+                  : Border.all(color: AppColors.borderLight, width: 1),
               boxShadow: isLocked
                   ? []
                   : [
@@ -204,10 +205,10 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: isCompleted
-                        ? const Color(0xFF75A66B)
+                        ? AppColors.primary
                         : isCurrent
                         ? const Color(0xFFF07D4F)
-                        : const Color(0xFFB1AA9E),
+                        : AppColors.textSub,
                   ),
                 ),
                 Text(
@@ -216,8 +217,8 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: isLocked
-                        ? const Color(0xFFB1AA9E)
-                        : const Color(0xFF4A3E39),
+                        ? AppColors.textSub
+                        : AppColors.textMain,
                   ),
                 ),
               ],

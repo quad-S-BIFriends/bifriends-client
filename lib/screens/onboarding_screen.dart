@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/onboarding_service.dart';
+import '../theme/app_colors.dart';
 import 'main_scaffold.dart';
 
 class SpeechBubbleShape extends ShapeBorder {
@@ -69,9 +70,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<Map<String, dynamic>> _giftItems = const [
     {'id': 'GIFT_1', 'name': '모자', 'icon': Icons.adjust, 'image': 'hat'},
-    {'id': 'GIFT_2', 'name': '정장\n모자', 'icon': Icons.auto_awesome, 'image': 'top_hat'},
-    {'id': 'GIFT_3', 'name': '왕관', 'icon': Icons.workspace_premium, 'image': 'crown'},
-    {'id': 'GIFT_4', 'name': '꽃', 'icon': Icons.filter_vintage, 'image': 'flower'},
+    {
+      'id': 'GIFT_2',
+      'name': '정장\n모자',
+      'icon': Icons.auto_awesome,
+      'image': 'top_hat',
+    },
+    {
+      'id': 'GIFT_3',
+      'name': '왕관',
+      'icon': Icons.workspace_premium,
+      'image': 'crown',
+    },
+    {
+      'id': 'GIFT_4',
+      'name': '꽃',
+      'icon': Icons.filter_vintage,
+      'image': 'flower',
+    },
   ];
 
   Future<void> _nextPage() async {
@@ -86,13 +102,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           grade: _selectedGrade!,
         );
       } else if (_currentPage == 2) {
-        await _onboardingService.updateInterests(
-          interests: _selectedInterests,
-        );
+        await _onboardingService.updateInterests(interests: _selectedInterests);
       } else if (_currentPage == 4) {
-        await _onboardingService.selectGift(
-          itemType: _selectedGift!,
-        );
+        await _onboardingService.selectGift(itemType: _selectedGift!);
       } else if (_currentPage == 5) {
         // 권한 요청
         final Map<Permission, PermissionStatus> statuses = await [
@@ -100,8 +112,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Permission.microphone,
         ].request();
 
-        final bool notificationEnabled = statuses[Permission.notification]?.isGranted ?? false;
-        final bool microphoneEnabled = statuses[Permission.microphone]?.isGranted ?? false;
+        final bool notificationEnabled =
+            statuses[Permission.notification]?.isGranted ?? false;
+        final bool microphoneEnabled =
+            statuses[Permission.microphone]?.isGranted ?? false;
 
         await _onboardingService.updatePermissions(
           notificationEnabled: notificationEnabled,
@@ -159,7 +173,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       body: SafeArea(
         child: Stack(
           children: [
@@ -189,7 +202,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   icon: const Icon(
                     Icons.arrow_back_ios,
                     size: 20,
-                    color: Color(0xFF5C4A3A),
+                    color: AppColors.textMain,
                   ),
                   onPressed: _isLoading ? null : _prevPage,
                 ),
@@ -199,7 +212,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 color: Colors.black.withValues(alpha: 0.2),
                 child: const Center(
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF75A66B)),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
                   ),
                 ),
               ),
@@ -224,7 +239,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         height: 6,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: const Color(0xFFEAE5DB),
+          color: AppColors.borderLight,
           borderRadius: BorderRadius.circular(3),
         ),
         child: FractionallySizedBox(
@@ -232,7 +247,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           widthFactor: progress.clamp(0.0, 1.0),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF8B7D6B),
+              color: AppColors.textSub,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -262,7 +277,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         style: GoogleFonts.gaegu(
           fontSize: 22,
           fontWeight: FontWeight.w700,
-          color: const Color(0xFF5C4A3A),
+          color: AppColors.textMain,
           height: 1.3,
         ),
       ),
@@ -314,7 +329,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               )
             : Text(
                 text,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
       ),
     );
@@ -374,12 +392,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF5C4A3A),
+                color: AppColors.textMain,
               ),
               decoration: const InputDecoration(
                 hintText: '닉네임 입력',
                 hintStyle: TextStyle(
-                  color: Color(0xFFCCC5BB),
+                  color: AppColors.textSub,
                   fontWeight: FontWeight.w500,
                 ),
                 border: InputBorder.none,
@@ -426,13 +444,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
                     color: isSelected ? const Color(0xFFF4EFE7) : Colors.white,
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isSelected
                           ? const Color(0xFF738A58)
-                          : const Color(0xFFE5DED5),
+                          : AppColors.borderLight,
                       width: isSelected ? 2 : 1,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Center(
                     child: Text(
@@ -442,7 +467,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         fontWeight: FontWeight.bold,
                         color: isSelected
                             ? const Color(0xFF738A58)
-                            : const Color(0xFF5C4A3A),
+                            : AppColors.textMain,
                       ),
                     ),
                   ),
@@ -470,7 +495,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             style: GoogleFonts.gaegu(
               fontSize: 32,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF5C4A3A),
+              color: AppColors.textMain,
             ),
           ),
           const SizedBox(height: 32),
@@ -499,13 +524,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF8B7D6B)
+                          ? AppColors.textSub
                           : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFF8B7D6B)
-                            : const Color(0xFFE5DED5),
+                            ? AppColors.textSub
+                            : AppColors.borderLight,
                         width: 1,
                       ),
                       boxShadow: [
@@ -524,7 +549,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           size: 28,
                           color: isSelected
                               ? Colors.white
-                              : const Color(0xFF5C4A3A),
+                              : AppColors.textMain,
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -535,7 +560,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             fontWeight: FontWeight.w700,
                             color: isSelected
                                 ? Colors.white
-                                : const Color(0xFF5C4A3A),
+                                : AppColors.textMain,
                           ),
                         ),
                       ],
@@ -575,7 +600,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final particle = _hasJongseong(displayName) ? '아' : '야';
     String? currentImage;
     if (_selectedGift != null) {
-      final selectedItem = _giftItems.firstWhere((item) => item['id'] == _selectedGift);
+      final selectedItem = _giftItems.firstWhere(
+        (item) => item['id'] == _selectedGift,
+      );
       currentImage = 'assets/images/leo_${selectedItem['image']}.png';
     }
     return _buildPageWrapper(
@@ -628,8 +655,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         item['icon'] as IconData,
                         size: 28,
                         color: isSelected
-                            ? const Color(0xFF5C4A3A)
-                            : const Color(0xFF8B7D6B),
+                            ? AppColors.textMain
+                            : AppColors.textSub,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -639,8 +666,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: isSelected
-                              ? const Color(0xFF5C4A3A)
-                              : const Color(0xFF8B7D6B),
+                              ? AppColors.textMain
+                              : AppColors.textSub,
                         ),
                       ),
                     ],
@@ -660,7 +687,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final particle = _hasJongseong(displayName) ? '이의' : '의';
     String? finalImage;
     if (_selectedGift != null) {
-      final selectedItem = _giftItems.firstWhere((item) => item['id'] == _selectedGift);
+      final selectedItem = _giftItems.firstWhere(
+        (item) => item['id'] == _selectedGift,
+      );
       finalImage = 'assets/images/leo_${selectedItem['image']}.png';
     }
     return _buildPageWrapper(
@@ -683,7 +712,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF8B7D6B),
+              color: AppColors.textSub,
             ),
           ),
           const SizedBox(height: 16),

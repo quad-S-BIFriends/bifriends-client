@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/todo_model.dart';
 import '../widgets/falling_leaves.dart';
 import '../services/member_service.dart';
+import '../theme/app_colors.dart';
 import 'closet_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -120,12 +121,12 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF8B9D8A), Color(0xFF3D5A3C)],
+                colors: [Color(0xFF8B9D8A), AppColors.primary],
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF75A66B).withValues(alpha: 0.3),
+                  color: AppColors.primary.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -158,12 +159,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   offset: const Offset(0, 3),
                 ),
               ],
-              border: Border.all(color: const Color(0xFFF0EBE1), width: 1),
+              border: Border.all(color: AppColors.borderLight, width: 1),
             ),
             child: IconButton(
               icon: const Icon(
                 Icons.settings_outlined,
-                color: Color(0xFF4A3E39),
+                color: AppColors.textMain,
                 size: 22,
               ),
               onPressed: _navigateToProfile,
@@ -182,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
         style: GoogleFonts.gaegu(
           fontSize: 24,
           fontWeight: FontWeight.w800,
-          color: const Color(0xFF6B4423),
+          color: AppColors.textMain,
           height: 1.4,
         ),
       ),
@@ -235,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF4A3E39),
+              color: AppColors.textMain,
             ),
           ),
         ],
@@ -266,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF75A66B).withValues(alpha: 0.15),
+                      color: AppColors.primary.withValues(alpha: 0.15),
                       blurRadius: 30,
                       spreadRadius: 5,
                     ),
@@ -290,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFF0EBE1), width: 1),
+                  border: Border.all(color: AppColors.borderLight, width: 1),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.04),
@@ -304,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF4A3E39),
+                    color: AppColors.textMain,
                   ),
                 ),
               ),
@@ -326,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFF0EBE1), width: 1),
+          border: Border.all(color: AppColors.borderLight, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -345,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF8D837D),
+                    color: AppColors.textSub,
                   ),
                 ),
                 Text(
@@ -364,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   height: 12,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0EBE1),
+                    color: AppColors.borderLight,
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
@@ -374,7 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 12,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF8B9D8A), Color(0xFF3D5A3C)],
+                        colors: [Color(0xFF8B9D8A), AppColors.primary],
                       ),
                       borderRadius: BorderRadius.circular(6),
                       boxShadow: [
@@ -397,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF75A66B),
+                  color: AppColors.primary,
                 ),
               ),
             ),
@@ -447,7 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const Icon(
                     Icons.check_circle_outline,
-                    color: Color(0xFF75A66B),
+                    color: AppColors.primary,
                     size: 22,
                   ),
                   const SizedBox(width: 8),
@@ -456,7 +457,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF75A66B),
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
@@ -466,7 +467,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFFB1AA9E),
+                  color: AppColors.textSub,
                 ),
               ),
             ],
@@ -507,7 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
           border: Border.all(
             color: todo.isCompleted
                 ? const Color(0xFFC8E0C1)
-                : const Color(0xFFF0EBE1),
+                : AppColors.borderLight,
             width: 1.5,
           ),
         ),
@@ -525,12 +526,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: todo.isCompleted
-                          ? const Color(0xFFB1AA9E)
-                          : const Color(0xFF4A3E39),
+                          ? AppColors.textSub
+                          : AppColors.textMain,
                       decoration: todo.isCompleted
                           ? TextDecoration.lineThrough
                           : null,
-                      decorationColor: const Color(0xFFB1AA9E),
+                      decorationColor: AppColors.textSub,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -539,7 +540,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFFB1AA9E),
+                      color: AppColors.textSub,
                     ),
                   ),
                 ],
@@ -551,7 +552,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? const Icon(
                       Icons.check_circle,
                       key: ValueKey('checked'),
-                      color: Color(0xFF75A66B),
+                      color: AppColors.primary,
                       size: 26,
                     )
                   : Container(

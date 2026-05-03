@@ -6,6 +6,7 @@ import 'conversation_screen.dart';
 import 'my_info_screen.dart';
 import '../widgets/guide_tour_overlay.dart';
 import '../widgets/rocket_animation.dart';
+import '../theme/app_colors.dart';
 
 class MainScaffold extends StatefulWidget {
   final bool isFirstVisit;
@@ -138,7 +139,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         });
       },
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFF75A66B),
+      selectedItemColor: AppColors.primary,
       unselectedItemColor: Colors.grey,
       backgroundColor: Colors.white,
       showUnselectedLabels: true,
@@ -185,7 +186,7 @@ class _ActiveIcon extends StatelessWidget {
         color: const Color(0xFFE4F1DF),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(iconData, color: const Color(0xFF75A66B)),
+      child: Icon(iconData, color: AppColors.primary),
     );
   }
 }
