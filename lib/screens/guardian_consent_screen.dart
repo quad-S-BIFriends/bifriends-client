@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../theme/app_colors.dart';
 import 'parent_setup_screen.dart';
 
 class GuardianConsentScreen extends StatefulWidget {
@@ -52,12 +54,12 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF6B4423),
+                      color: AppColors.textMain,
                     ),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.close, color: Color(0xFF8A7E74)),
+                    child: const Icon(Icons.close, color: AppColors.textSub),
                   ),
                 ],
               ),
@@ -66,7 +68,7 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
                 content,
                 style: const TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF6B4423),
+                  color: AppColors.textMain,
                   height: 1.7,
                 ),
               ),
@@ -98,151 +100,122 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textMain, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Container(
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              Text(
+                '보호자 동의',
+                style: GoogleFonts.gaegu(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMain,
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E4),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.favorite_outline,
-                          color: Color(0xFF3D6B35),
-                          size: 32,
-                        ),
-                      ),
+              const SizedBox(height: 48),
+              _buildAllAgreeCheckbox(),
+              const SizedBox(height: 24),
+              const Divider(height: 1, color: AppColors.borderLight),
+              const SizedBox(height: 24),
+              _buildTermItem(
+                '서비스 이용 약관',
+                _termsAgreed,
+                (v) {
+                  setState(() => _termsAgreed = v);
+                  _updateAllAgreed();
+                },
+                () => _showTermsDetail(
+                  '이용약관',
+                  'BiFriend 서비스 이용약관입니다. 본 서비스는 아동의 학습과 정서 발달을 돕기 위해 제공되며...',
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildTermItem(
+                '개인정보 처리방침',
+                _privacyAgreed,
+                (v) {
+                  setState(() => _privacyAgreed = v);
+                  _updateAllAgreed();
+                },
+                () => _showTermsDetail(
+                  '개인정보',
+                  '개인정보 수집 및 이용 동의서입니다. 수집한 정보는 서비스 제공 및 개선 목적으로만 사용합니다.',
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildTermItem(
+                '아동정보 수집',
+                _childInfoAgreed,
+                (v) {
+                  setState(() => _childInfoAgreed = v);
+                  _updateAllAgreed();
+                },
+                () => _showTermsDetail(
+                  '아동정보',
+                  '만 14세 미만 아동의 개인정보 수집에 대한 법정대리인 동의서입니다. 보호자의 동의 없이는 아동의 정보를 수집하지 않습니다.',
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
                     ),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    elevation: 0,
                   ),
-                  const SizedBox(height: 20),
-                  const Center(
-                    child: Text(
-                      '보호자 동의',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF6B4423),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Center(
-                    child: Text(
-                      'BiFriend는 아이의 학습과 감정 성장을\n돕는 따뜻한 AI 친구입니다.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF8A7E74),
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  _buildAllAgreeCheckbox(),
-                  const Divider(height: 28, color: Color(0xFFE8E0D5)),
-                  _buildTermItem(
-                    '이용약관 동의 (필수)',
-                    _termsAgreed,
-                    (v) {
-                      setState(() => _termsAgreed = v);
-                      _updateAllAgreed();
-                    },
-                    () => _showTermsDetail(
-                      '이용약관',
-                      'BiFriend 서비스 이용약관입니다. 본 서비스는 아동의 학습과 정서 발달을 돕기 위해 제공되며...',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTermItem(
-                    '개인정보 수집 및 이용 동의 (필수)',
-                    _privacyAgreed,
-                    (v) {
-                      setState(() => _privacyAgreed = v);
-                      _updateAllAgreed();
-                    },
-                    () => _showTermsDetail(
-                      '개인정보',
-                      '개인정보 수집 및 이용 동의서입니다. 수집한 정보는 서비스 제공 및 개선 목적으로만 사용합니다.',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTermItem(
-                    '만 14세 미만 아동 정보 수집 동의\n(필수)',
-                    _childInfoAgreed,
-                    (v) {
-                      setState(() => _childInfoAgreed = v);
-                      _updateAllAgreed();
-                    },
-                    () => _showTermsDetail(
-                      '아동정보',
-                      '만 14세 미만 아동의 개인정보 수집에 대한 법정대리인 동의서입니다. 보호자의 동의 없이는 아동의 정보를 수집하지 않습니다.',
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        elevation: 0,
-                      ),
-                      onPressed: _canProceed
-                          ? () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ParentSetupScreen(),
-                                ),
-                              );
-                            }
-                          : null,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Text(
-                            '부모님 비밀번호 설정하기',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                  onPressed: _canProceed
+                      ? () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ParentSetupScreen(),
                             ),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward, size: 20),
-                        ],
-                      ),
+                          );
+                        }
+                      : null,
+                  child: const Text(
+                    '보호자 휴대폰 인증하기',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: 32),
+              // Page indicators
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(6, (index) {
+                  final isFirst = index == 0;
+                  return Container(
+                    width: isFirst ? 24 : 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: isFirst ? AppColors.textMain : AppColors.borderLight,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 32),
+            ],
           ),
         ),
       ),
@@ -254,14 +227,14 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
       onTap: () => _toggleAll(!_allAgreed),
       child: Row(
         children: [
-          _buildCheckIcon(_allAgreed, size: 26),
+          _buildCheckIcon(_allAgreed, size: 28),
           const SizedBox(width: 12),
           const Text(
-            '모두 동의할게요',
+            '모든 항목에 동의합니다',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF3D3229),
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMain,
             ),
           ),
         ],
@@ -279,28 +252,33 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
       children: [
         GestureDetector(
           onTap: () => onChanged(!isChecked),
-          child: _buildCheckIcon(isChecked, size: 22),
+          child: _buildCheckIcon(isChecked, size: 24),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Expanded(
           child: GestureDetector(
-            onTap: onDetailTap,
+            onTap: () => onChanged(!isChecked),
             child: Text(
               title,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF6B5B4E),
+                color: AppColors.textSub,
               ),
             ),
           ),
         ),
         GestureDetector(
           onTap: onDetailTap,
-          child: const Icon(
-            Icons.chevron_right,
-            color: Color(0xFFB8A590),
-            size: 20,
+          child: const Text(
+            '보기',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textMain,
+              decoration: TextDecoration.underline,
+              decorationColor: AppColors.textMain,
+            ),
           ),
         ),
       ],
@@ -312,11 +290,11 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: checked ? const Color(0xFF3D5A3C) : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
+        color: checked ? AppColors.textMain : Colors.white,
+        shape: BoxShape.circle,
         border: Border.all(
-          color: checked ? const Color(0xFF3D5A3C) : const Color(0xFFCCC5BB),
-          width: 2,
+          color: checked ? AppColors.textMain : AppColors.borderLight,
+          width: 1.5,
         ),
       ),
       child: checked
