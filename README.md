@@ -1,4 +1,4 @@
-# Bifriends Client
+# BIFriends Client
 
 Bifriends는 경계선 지능 아동의 학습과 소통을 돕기 위해 개발된 **Flutter 기반 모바일 클라이언트**입니다. 
 서비스의 목적을 달성하기 위한 보호자 온보딩, 스포트라이트 가이드 등의 인터랙션과 UI를 포함하고 있습니다.
