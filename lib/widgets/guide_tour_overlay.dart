@@ -124,6 +124,11 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
     final stepInfo = guideTourStepInfoMap[widget.currentStep]!;
     final isWelcome = widget.currentStep == GuideTourStep.welcomePopup;
     final spotlightRect = isWelcome ? null : _getSpotlightRect();
+    final bottomOffset = spotlightRect != null
+        ? MediaQuery.of(context).size.height - spotlightRect.top + 20
+        : MediaQuery.of(context).padding.bottom +
+              kBottomNavigationBarHeight / 2 +
+              20;
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -162,20 +167,22 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
             ),
 
           if (isWelcome)
-            _buildWelcomePopup(stepInfo)
+            _buildWelcomePopup(stepInfo, bottomOffset)
           else
-            _buildTabGuide(stepInfo, spotlightRect),
+            _buildTabGuide(stepInfo, spotlightRect, bottomOffset),
         ],
       ),
     );
   }
 
-  Widget _buildWelcomePopup(GuideTourStepInfo stepInfo) {
-    return Center(
+  Widget _buildWelcomePopup(GuideTourStepInfo stepInfo, double bottomOffset) {
+    return Positioned(
+      left: 32,
+      right: 32,
+      bottom: bottomOffset,
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 40),
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -248,11 +255,12 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
     );
   }
 
-  Widget _buildTabGuide(GuideTourStepInfo stepInfo, Rect? spotlightRect) {
+  Widget _buildTabGuide(
+    GuideTourStepInfo stepInfo,
+    Rect? spotlightRect,
+    double bottomOffset,
+  ) {
     final isLastStep = widget.currentStep == GuideTourStep.heartTab;
-    final bottomOffset = spotlightRect != null
-        ? MediaQuery.of(context).size.height - spotlightRect.top + 20
-        : 200.0;
 
     return Positioned(
       left: 32,
@@ -282,11 +290,7 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
                   color: const Color(0xFFE4F1DF),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  stepInfo.icon,
-                  color: AppColors.primary,
-                  size: 28,
-                ),
+                child: Icon(stepInfo.icon, color: AppColors.primary, size: 28),
               ),
               const SizedBox(height: 16),
               Text(
@@ -337,7 +341,7 @@ class _GuideTourOverlayState extends State<GuideTourOverlay>
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   onPressed: isLastStep ? widget.onFinish : widget.onNext,
