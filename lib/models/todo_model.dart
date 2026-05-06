@@ -16,21 +16,16 @@ class TodoItem {
   static List<TodoItem> generateDailyTodos() {
     return [
       TodoItem(
-        title: '새로운 단어 3개 배우기',
-        emoji: '📚',
-        estimatedMinutes: 10,
-        targetTabIndex: 1,
-      ),
-      TodoItem(
-        title: '오늘의 감정 이야기하기',
-        emoji: '💬',
-        estimatedMinutes: 5,
+        title: '레오랑 인사하기',
+        emoji: '🦫',
+        estimatedMinutes: 1,
         targetTabIndex: 2,
       ),
       TodoItem(
-        title: '심호흡하며 휴식하기',
-        emoji: '🧘',
+        title: '오늘의 문제 3개 풀기',
+        emoji: '📚',
         estimatedMinutes: 5,
+        targetTabIndex: 1,
       ),
     ];
   }
