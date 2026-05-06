@@ -8,6 +8,7 @@ class Member {
   final bool notificationEnabled;
   final bool microphoneEnabled;
   final bool onboardingCompleted;
+  final String? representativeItemType;
 
   Member({
     required this.email,
@@ -19,6 +20,7 @@ class Member {
     required this.notificationEnabled,
     required this.microphoneEnabled,
     required this.onboardingCompleted,
+    this.representativeItemType,
   });
 
   factory Member.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class Member {
       notificationEnabled: json['notificationEnabled'] as bool? ?? false,
       microphoneEnabled: json['microphoneEnabled'] as bool? ?? false,
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
+      representativeItemType: json['representativeItemType'] as String?,
     );
   }
 
@@ -46,6 +49,7 @@ class Member {
       'notificationEnabled': notificationEnabled,
       'microphoneEnabled': microphoneEnabled,
       'onboardingCompleted': onboardingCompleted,
+      'representativeItemType': representativeItemType,
     };
   }
 }
