@@ -78,10 +78,11 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    elevation: 4,
+                    shadowColor: Colors.black.withValues(alpha: 0.2),
                   ),
                   onPressed: () => Navigator.pop(context),
                   child: const Text(
@@ -105,13 +106,17 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textMain, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: AppColors.textMain,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -173,10 +178,11 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 18),
-                    elevation: 0,
+                    elevation: 4,
+                    shadowColor: Colors.black.withValues(alpha: 0.2),
                   ),
                   onPressed: _canProceed
                       ? () {
@@ -190,29 +196,9 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
                       : null,
                   child: const Text(
                     '보호자 휴대폰 인증하기',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              // Page indicators
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(6, (index) {
-                  final isFirst = index == 0;
-                  return Container(
-                    width: isFirst ? 24 : 8,
-                    height: 8,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: isFirst ? AppColors.textMain : AppColors.borderLight,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  );
-                }),
               ),
               const SizedBox(height: 32),
             ],

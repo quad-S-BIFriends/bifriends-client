@@ -54,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -102,10 +102,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 18),
-                      elevation: 0,
+                      elevation: 4,
+                      shadowColor: Colors.black.withValues(alpha: 0.2),
                     ),
                     onPressed: _isLoading ? null : _handleLogin,
                     child: _isLoading
@@ -142,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                   ),
                 ),
-                const Spacer(flex: 3),
+                const SizedBox(height: 32),
               ],
             ),
           ),

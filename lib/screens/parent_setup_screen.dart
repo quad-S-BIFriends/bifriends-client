@@ -467,7 +467,7 @@ class _ParentSetupScreenState extends State<ParentSetupScreen> {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 elevation: 0,
               ),
@@ -485,7 +485,7 @@ class _ParentSetupScreenState extends State<ParentSetupScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 32),
         ],
       ),
     );

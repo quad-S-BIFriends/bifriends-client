@@ -314,7 +314,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           shadowColor: Colors.black.withValues(alpha: 0.2),
           padding: const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         onPressed: (isActive && !_isLoading) ? onPressed : null,
