@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../models/todo_model.dart';
 import '../widgets/falling_leaves.dart';
 import '../services/member_service.dart';
@@ -18,11 +19,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _userName = '친구';
   bool _isLoadingUser = true;
-  final int _consecutiveDays = 3;
-  final int _grassCount = 150;
+  final int _consecutiveDays = 7;
   final int _currentLevel = 3;
-  final int _currentGrass = 150;
-  final int _nextLevelGrass = 200;
+  final int _currentGrass = 1250;
+  final int _nextLevelGrass = 1500;
 
   late List<TodoItem> _todos;
   final _memberService = MemberService();
@@ -30,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Todo나 레벨 등의 학습 상태 데이터는 API 연동 전까지 Mock 데이터 유지
     _todos = TodoItem.generateDailyTodos();
     _fetchUserInfo();
   }
@@ -51,18 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
-
-  String _generateGreeting() {
-    if (_consecutiveDays >= 7) {
-      return '와! $_userName, $_consecutiveDays일 연속이야!\n정말 대단해! 🌟';
-    } else if (_consecutiveDays >= 3) {
-      return '안녕 $_userName!\n$_consecutiveDays일 연속 왔네, 멋져! 💪';
-    } else {
-      return '안녕 $_userName!\n오늘도 반가워! 😊';
-    }
-  }
-
-  int get _completedCount => _todos.where((t) => t.isCompleted).length;
 
   void _handleTodoTap(TodoItem todo) {
     if (todo.isCompleted) return;
@@ -88,143 +77,111 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildTopBar(),
-              _buildGreetingSection(),
-              _buildStatusChips(),
-              _buildCharacterArea(),
-              _buildProgressBar(),
-              const SizedBox(height: 8),
-              _buildTodoSection(),
-              const SizedBox(height: 32),
-            ],
-          ),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 50),
+            _buildHeader(),
+            _buildStatusChips(),
+            _buildCharacterArea(),
+            _buildProgressBar(),
+            const SizedBox(height: 24),
+            _buildTodoSection(),
+            const SizedBox(height: 40),
+          ],
         ),
-
-        Positioned(right: 20, bottom: 20, child: _buildClosetFab()),
-      ],
-    );
-  }
-
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF8B9D8A), AppColors.primary],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('⭐', style: TextStyle(fontSize: 16)),
-                const SizedBox(width: 6),
-                Text(
-                  'Lv.$_currentLevel',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-              border: Border.all(color: AppColors.borderLight, width: 1),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.settings_outlined,
-                color: AppColors.textMain,
-                size: 22,
-              ),
-              onPressed: _navigateToProfile,
-            ),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildGreetingSection() {
+  Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Text(
-        _generateGreeting(),
-        style: GoogleFonts.gaegu(
-          fontSize: 24,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textMain,
-          height: 1.4,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Lv. $_currentLevel',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textMain,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              RichText(
+                text: TextSpan(
+                  style: GoogleFonts.gaegu(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSub,
+                  ),
+                  children: [
+                    const TextSpan(text: '안녕, '),
+                    TextSpan(
+                      text: _userName,
+                      style: const TextStyle(color: AppColors.primary),
+                    ),
+                    const TextSpan(text: '! 오늘도 반가워 🦫'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: AppColors.textSub,
+              size: 28,
+            ),
+            onPressed: _navigateToProfile,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildStatusChips() {
+    final formatCurrency = NumberFormat('#,###');
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       child: Row(
         children: [
-          _buildChip(
-            icon: '🔥',
-            label: '$_consecutiveDays일째',
-            bgColor: const Color(0xFFFFF1EB),
-            borderColor: const Color(0xFFFFDCC8),
-          ),
+          _buildChip(icon: '🔥', label: '$_consecutiveDays일 연속'),
           const SizedBox(width: 10),
           _buildChip(
-            icon: '🌿',
-            label: '$_grassCount개',
-            bgColor: const Color(0xFFE4F1DF),
-            borderColor: const Color(0xFFC8E0C1),
+            icon: '🌱',
+            label: '${formatCurrency.format(_currentGrass)}개',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildChip({
-    required String icon,
-    required String label,
-    required Color bgColor,
-    required Color borderColor,
-  }) {
+  Widget _buildChip({required String icon, required String label}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.5),
+        border: Border.all(color: AppColors.borderLight, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -234,8 +191,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
               color: AppColors.textMain,
             ),
           ),
@@ -246,70 +203,67 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCharacterArea() {
     return SizedBox(
-      height: 260,
+      height: 320,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          const Positioned.fill(child: FallingLeaves(leafCount: 6)),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFFE4F1DF).withValues(alpha: 0.9),
-                      const Color(0xFFE4F1DF).withValues(alpha: 0.2),
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.15),
-                      blurRadius: 30,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Image.asset(
-                    'assets/images/leo_defaultface.png',
-                    height: 100,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Text('🦫', style: TextStyle(fontSize: 72)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
-                ),
+          const Positioned.fill(child: FallingLeaves(leafCount: 4)),
+
+          Positioned(
+            bottom: 20,
+            child: Image.asset(
+              'assets/images/leo_flower.png',
+              height: 260,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) =>
+                  const Text('🦫', style: TextStyle(fontSize: 120)),
+            ),
+          ),
+
+          Positioned(
+            right: 40,
+            bottom: 30,
+            child: GestureDetector(
+              onTap: _navigateToCloset,
+              child: Container(
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.borderLight, width: 1),
+                  shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
-                child: const Text(
-                  'Leo 🌟',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMain,
-                  ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const Icon(
+                      Icons.checkroom,
+                      color: AppColors.textSub,
+                      size: 32,
+                    ),
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00D150),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -317,22 +271,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildProgressBar() {
-    final progress = _currentGrass / _nextLevelGrass;
-    final percentage = (progress * 100).toInt();
+    final int requiredGrass = _nextLevelGrass - _currentGrass;
+    final double progress = _currentGrass / _nextLevelGrass;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.borderLight, width: 1),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -341,143 +294,104 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                   '다음 레벨까지',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSub,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textMain,
                   ),
                 ),
-                Text(
-                  '🌿 $_currentGrass / $_nextLevelGrass',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF8B9D8A),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Stack(
-              children: [
                 Container(
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: AppColors.borderLight,
-                    borderRadius: BorderRadius.circular(6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
                   ),
-                ),
-                FractionallySizedBox(
-                  widthFactor: progress.clamp(0.0, 1.0),
-                  child: Container(
-                    height: 12,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF8B9D8A), AppColors.primary],
-                      ),
-                      borderRadius: BorderRadius.circular(6),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF8B9D8A).withValues(alpha: 0.3),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Lv.$_currentLevel → Lv.${_currentLevel + 1}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                '$percentage%',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
+            const SizedBox(height: 20),
+
+            Container(
+              height: 24,
+              decoration: BoxDecoration(
+                color: AppColors.cardLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.borderLight, width: 1),
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: progress.clamp(0.0, 1.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSub,
+                ),
+                children: [
+                  TextSpan(text: 'Lv.${_currentLevel + 1}까지 '),
+                  TextSpan(
+                    text: '$requiredGrass',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textMain,
+                    ),
+                  ),
+                  const TextSpan(text: '개의 풀이 더 필요해! 🌱'),
+                ],
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildClosetFab() {
-    return GestureDetector(
-      onTap: _navigateToCloset,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFF3C74B), Color(0xFFF07D4F)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFF07D4F).withValues(alpha: 0.35),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: const Center(child: Text('👔', style: TextStyle(fontSize: 24))),
       ),
     );
   }
 
   Widget _buildTodoSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.check_circle_outline,
-                    color: AppColors.primary,
-                    size: 22,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    '오늘의 할 일',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                '$_completedCount / ${_todos.length} 완료',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSub,
-                ),
-              ),
-            ],
+          const Text(
+            '오늘의 할 일',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textMain,
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           ...List.generate(_todos.length, (index) {
             final todo = _todos[index];
             return Padding(
               padding: EdgeInsets.only(
-                bottom: index < _todos.length - 1 ? 10 : 0,
+                bottom: index < _todos.length - 1 ? 12 : 0,
               ),
               child: _buildTodoCard(todo),
             );
@@ -492,39 +406,45 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () => _handleTodoTap(todo),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
         decoration: BoxDecoration(
-          color: todo.isCompleted ? const Color(0xFFF0F8ED) : Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(
-                alpha: todo.isCompleted ? 0.01 : 0.04,
-              ),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-          border: Border.all(
-            color: todo.isCompleted
-                ? const Color(0xFFC8E0C1)
-                : AppColors.borderLight,
-            width: 1.5,
-          ),
+          color: AppColors.cardLight,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           children: [
-            Text(todo.emoji, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 14),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: todo.isCompleted
+                  ? const Icon(
+                      Icons.check_circle,
+                      key: ValueKey('checked'),
+                      color: AppColors.primary,
+                      size: 28,
+                    )
+                  : Container(
+                      key: const ValueKey('unchecked'),
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFDCD5CA),
+                          width: 2.5,
+                        ),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    todo.title,
+                    '${todo.title} ${todo.emoji}',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
                       color: todo.isCompleted
                           ? AppColors.textSub
                           : AppColors.textMain,
@@ -534,39 +454,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       decorationColor: AppColors.textSub,
                     ),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '약 ${todo.estimatedMinutes}분',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSub,
-                    ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.schedule,
+                        size: 12,
+                        color: AppColors.textSub,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '약 ${todo.estimatedMinutes}분 소요',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSub,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: todo.isCompleted
-                  ? const Icon(
-                      Icons.check_circle,
-                      key: ValueKey('checked'),
-                      color: AppColors.primary,
-                      size: 26,
-                    )
-                  : Container(
-                      key: const ValueKey('unchecked'),
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFFDCD5CA),
-                          width: 2,
-                        ),
-                      ),
-                    ),
             ),
           ],
         ),
