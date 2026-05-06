@@ -18,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _userName = '친구';
+  String? _representativeItemType;
   bool _isLoadingUser = true;
   final int _consecutiveDays = 7;
   final int _currentLevel = 3;
@@ -41,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _userName = member.nickname ?? member.name;
+          _representativeItemType = member.representativeItemType;
           _isLoadingUser = false;
         });
       }
@@ -68,6 +70,16 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.onNavigateToTab?.call(3);
   }
 
+  String _getCharacterImagePath() {
+    const imageMap = {
+      'GIFT_1': 'assets/images/leo_studying.png',
+      'GIFT_2': 'assets/images/leo_ribbon.png',
+      'GIFT_3': 'assets/images/leo_flower.png',
+      'GIFT_4': 'assets/images/leo_sunglasses.png',
+    };
+    return imageMap[_representativeItemType] ?? 'assets/images/leo_default.png';
+  }
+
   void _navigateToCloset() {
     Navigator.push(
       context,
@@ -83,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 50),
+            const SizedBox(height: 16),
             _buildHeader(),
             _buildStatusChips(),
             _buildCharacterArea(),
@@ -99,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      padding: const EdgeInsets.only(left: 24.0, right: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Positioned(
             bottom: 20,
             child: Image.asset(
-              'assets/images/leo_flower.png',
+              _getCharacterImagePath(),
               height: 260,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
