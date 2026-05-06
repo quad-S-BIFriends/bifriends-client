@@ -44,10 +44,10 @@ class AuthService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   String get _baseUrl {
-    if (kIsWeb) return 'http://localhost:8080';
+    if (kIsWeb) return 'http://127.0.0.1:8080';
     return Platform.isAndroid
         ? 'http://10.0.2.2:8080'
-        : 'http://localhost:8080';
+        : 'http://127.0.0.1:8080';
   }
 
   Future<AuthResponse?> signInWithGoogle() async {
