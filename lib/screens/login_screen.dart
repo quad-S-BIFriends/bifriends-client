@@ -26,13 +26,28 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (response != null) {
-        // 임시 테스트용으로 온보딩 상태와 무관하게 항상 온보딩 화면으로 이동하도록 수정
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const GuardianConsentScreen(),
-          ),
-        );
+        // 임시 테스트용으로 온보딩 상태와 무관하게 항상 온보딩 화면으로 이동하도록 수정된 부분
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => const GuardianConsentScreen(),
+        //     ),
+        //   );
+        if (response.onboardingCompleted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ModeSelectionScreen(),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const GuardianConsentScreen(),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (!mounted) return;
