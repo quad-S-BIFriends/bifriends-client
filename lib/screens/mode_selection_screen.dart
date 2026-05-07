@@ -4,6 +4,7 @@ import '../models/member_model.dart';
 import '../services/member_service.dart';
 import '../theme/app_colors.dart';
 import 'main_scaffold.dart';
+import 'parent_mode_auth_screen.dart';
 
 class ModeSelectionScreen extends StatefulWidget {
   const ModeSelectionScreen({super.key});
@@ -53,11 +54,9 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
         MaterialPageRoute(builder: (context) => const MainScaffold()),
       );
     } else if (_selectedIndex == 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('부모님 대시보드는 준비 중입니다.'),
-          backgroundColor: AppColors.primary,
-        ),
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ParentModeAuthScreen()),
       );
     }
   }

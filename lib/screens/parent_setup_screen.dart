@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'onboarding_screen.dart';
 
@@ -13,16 +15,19 @@ class _ParentSetupScreenState extends State<ParentSetupScreen> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
 
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
   String _pin = '';
   String _confirmPin = '';
   bool _pinError = false;
 
-  void _nextStep() {
+  Future<void> _nextStep() async {
     if (_currentStep == 1 && _pin.length < 4) return;
     if (_currentStep == 2 && _confirmPin.length < 4) return;
 
     if (_currentStep == 2) {
       if (_pin == _confirmPin) {
+        await _storage.write(key: 'parentPin', value: _pin);
+        debugPrint('[ParentSetup] PIN saved: $_pin');
         _pageController.nextPage(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
