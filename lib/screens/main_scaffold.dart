@@ -155,18 +155,18 @@ class _MainScaffoldState extends State<MainScaffold> {
             icon: Icons.menu_book_outlined,
           ),
           activeIcon: _ActiveIcon(Icons.menu_book),
-          label: '배움',
+          label: '공부방',
         ),
         BottomNavigationBarItem(
           icon: _KeyedIcon(key: _chatTabKey, icon: Icons.chat_bubble_outline),
           activeIcon: _ActiveIcon(Icons.chat_bubble),
-          label: '챗',
+          label: '레오랑 톡톡',
         ),
 
         BottomNavigationBarItem(
-          icon: _KeyedIcon(key: _heartTabKey, icon: Icons.favorite_outline),
-          activeIcon: _ActiveIcon(Icons.favorite),
-          label: '마음',
+          icon: _KeyedIcon(key: _heartTabKey, icon: Icons.people_outline),
+          activeIcon: _ActiveIcon(Icons.people),
+          label: '친구랑',
         ),
       ],
     );
