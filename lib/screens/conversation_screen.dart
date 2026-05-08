@@ -367,10 +367,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black12,
@@ -380,30 +376,29 @@ class _ConversationScreenState extends State<ConversationScreen> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.menu,
+                    color: AppColors.textMain,
+                    size: 24,
+                  ),
+                  onPressed: () => setState(() {
+                    _isHistoryOpen = false;
+                    _isSessionsExpanded = false;
+                  }),
+                ),
                 const Text(
                   '대화 기록',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textMain,
-                  ),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => setState(() {
-                    _isHistoryOpen = false;
-                    _isSessionsExpanded = false;
-                  }),
-                  child: const Icon(
-                    Icons.close,
-                    color: AppColors.textSub,
-                    size: 22,
                   ),
                 ),
               ],
