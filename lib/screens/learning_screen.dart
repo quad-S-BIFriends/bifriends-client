@@ -2,177 +2,215 @@ import 'package:flutter/material.dart';
 import '../widgets/learning_roadmap.dart';
 import '../theme/app_colors.dart';
 
-class LearningScreen extends StatefulWidget {
+class LearningScreen extends StatelessWidget {
   const LearningScreen({super.key});
-
-  @override
-  State<LearningScreen> createState() => _LearningScreenState();
-}
-
-class _LearningScreenState extends State<LearningScreen> {
-  int _selectedCategoryIndex = 0;
-
-  final List<Map<String, dynamic>> _categories = [
-    {'title': '생각하는 힘\n키우기', 'icon': '🧠', 'locked': false},
-    {'title': '말하는 힘\n키우기', 'icon': '🗣️', 'locked': true},
-  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeader(),
-            _buildCategorySelector(),
-            Expanded(
-              child: _selectedCategoryIndex == 0
-                  ? const LearningRoadmap()
-                  : const Center(
-                      child: Text(
-                        '준비 중인 과정입니다 🔒',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textSub,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '어떤 힘을 키워볼까?',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMain,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '하나씩 천천히 해보자!',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSub,
+                ),
+              ),
+              const SizedBox(height: 28),
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: _CategoryCard(
+                        tag: '수학이랑 친해지기',
+                        title: '생각하는 힘 키우기',
+                        subtitle: '도형이랑 숫자로 똑똑해지자! 🧠',
+                        icon: Icons.psychology,
+                        iconColor: const Color(0xFFE07B39),
+                        iconBgColor: const Color(0xFFFFF0E4),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const _RoadmapScreen(
+                              title: '생각하는 힘 키우기',
+                              subject: 'math',
+                            ),
+                          ),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: _CategoryCard(
+                        tag: '문장 만들기 연습',
+                        title: '말하는 힘 키우기',
+                        subtitle: '레오랑 같이 예쁜 문장을 만들어봐! 💬',
+                        icon: Icons.chat_bubble_outline,
+                        iconColor: AppColors.primary,
+                        iconBgColor: const Color(0xFFE4F0E4),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const _RoadmapScreen(
+                              title: '말하는 힘 키우기',
+                              subject: 'korean',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryCard extends StatelessWidget {
+  const _CategoryCard({
+    required this.tag,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.iconColor,
+    required this.iconBgColor,
+    required this.onTap,
+  });
+
+  final String tag;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBgColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(icon, color: iconColor, size: 40),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              tag,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: iconColor,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMain,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSub,
+              ),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildHeader() {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '어떤 힘을 키워볼까?',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textMain,
-            ),
+class _RoadmapScreen extends StatelessWidget {
+  const _RoadmapScreen({required this.title, required this.subject});
+
+  final String title;
+  final String subject;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: AppColors.textMain,
+            size: 20,
           ),
-          SizedBox(height: 6),
-          Text(
-            '하나의 엔진이 켜져있어 💡',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSub,
-            ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textMain,
           ),
-        ],
+        ),
+        centerTitle: true,
       ),
-    );
-  }
-
-  Widget _buildCategorySelector() {
-    return SizedBox(
-      height: 160,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        scrollDirection: Axis.horizontal,
-        itemCount: _categories.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 14),
-        itemBuilder: (context, index) {
-          final category = _categories[index];
-          final bool isSelected = _selectedCategoryIndex == index;
-          final bool isLocked = category['locked'];
-
-          return GestureDetector(
-            onTap: () {
-              if (!isLocked) {
-                setState(() => _selectedCategoryIndex = index);
-              }
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: 130,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFFFF7E2) : Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isSelected
-                      ? const Color(0xFFF3C74B)
-                      : AppColors.borderLight,
-                  width: isSelected ? 2 : 1,
+      body: subject == 'math'
+          ? const LearningRoadmap()
+          : const Center(
+              child: Text(
+                '준비 중인 과정입니다 🔒',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSub,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isLocked
-                              ? const Color(0xFFF5F3ED)
-                              : Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: isLocked
-                              ? null
-                              : [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.06),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                        ),
-                        child: Text(
-                          category['icon'],
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                      ),
-                      if (isLocked)
-                        const Icon(
-                          Icons.lock,
-                          color: Color(0xFFDCD5CA),
-                          size: 18,
-                        )
-                      else if (isSelected)
-                        const Icon(
-                          Icons.check_circle,
-                          color: Color(0xFFF3C74B),
-                          size: 20,
-                        ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Text(
-                    category['title'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isLocked ? AppColors.textSub : AppColors.textMain,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
               ),
             ),
-          );
-        },
-      ),
     );
   }
 }
