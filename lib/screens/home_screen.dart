@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/todo_model.dart';
 import '../widgets/falling_leaves.dart';
 import '../services/member_service.dart';
+import '../services/home_service.dart';
 import '../theme/app_colors.dart';
 import 'closet_screen.dart';
 import 'my_info_screen.dart';
@@ -20,21 +21,50 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _userName = '친구';
   String? _representativeItemType;
-  bool _isLoadingUser = true;
-  final int _consecutiveDays = 7;
-  final int _currentLevel = 3;
-  final int _currentGrass = 1250;
-  final int _nextLevelGrass = 1500;
+  int _consecutiveDays = 0;
+  int _currentLevel = 1;
+  int _availablePool = 0;
+  int _currentLevelProgress = 0;
+  int _totalPoolForLevelUp = 1000;
+  int _poolNeededForNextLevel = 1000;
 
   late List<TodoItem> _todos;
   final _memberService = MemberService();
+  final _homeService = HomeService();
 
   @override
   void initState() {
     super.initState();
-    // Todo나 레벨 등의 학습 상태 데이터는 API 연동 전까지 Mock 데이터 유지
-    _todos = TodoItem.generateDailyTodos();
-    _fetchUserInfo();
+    _todos = [];
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    await Future.wait([_fetchHomeData(), _fetchUserInfo()]);
+  }
+
+  Future<void> _fetchHomeData() async {
+    try {
+      final home = await _homeService.getHome();
+      if (mounted) {
+        setState(() {
+          _userName = home.member.nickname;
+          _consecutiveDays = home.stats.streakDays;
+          _currentLevel = home.stats.level;
+          _availablePool = home.stats.availablePool;
+          _currentLevelProgress = home.stats.currentLevelProgress;
+          _totalPoolForLevelUp = home.stats.totalPoolForCurrentLevelUp;
+          _poolNeededForNextLevel = home.stats.poolNeededForNextLevel;
+          _todos = home.todos.map(TodoItem.fromResponse).toList();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _todos = TodoItem.generateDailyTodos();
+        });
+      }
+    }
   }
 
   Future<void> _fetchUserInfo() async {
@@ -42,28 +72,35 @@ class _HomeScreenState extends State<HomeScreen> {
       final member = await _memberService.getMe();
       if (mounted) {
         setState(() {
-          _userName = member.nickname ?? member.name;
+          // Home API 실패 시 fallback으로 이름 설정
+          if (_userName == '친구') {
+            _userName = member.nickname ?? member.name;
+          }
           _representativeItemType = member.representativeItemType;
-          _isLoadingUser = false;
         });
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingUser = false;
-        });
-      }
+    } catch (_) {}
+  }
+
+  Future<void> _completeTodoSafely(TodoItem todo) async {
+    try {
+      await _homeService.completeTodo(todo.id!);
+    } catch (_) {
+      if (mounted) setState(() => todo.isCompleted = false);
     }
   }
 
   void _handleTodoTap(TodoItem todo) {
     if (todo.isCompleted) return;
 
+    setState(() => todo.isCompleted = true);
+
+    if (todo.id != null) {
+      _completeTodoSafely(todo);
+    }
+
     if (todo.targetTabIndex != null) {
       widget.onNavigateToTab?.call(todo.targetTabIndex!);
-      setState(() => todo.isCompleted = true);
-    } else {
-      setState(() => todo.isCompleted = true);
     }
   }
 
@@ -177,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 10),
           _buildChip(
             icon: '🌱',
-            label: '${formatCurrency.format(_currentGrass)}개',
+            label: '${formatCurrency.format(_availablePool)}개',
           ),
         ],
       ),
@@ -287,8 +324,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildProgressBar() {
-    final int requiredGrass = _nextLevelGrass - _currentGrass;
-    final double progress = _currentGrass / _nextLevelGrass;
+    final double progress = _totalPoolForLevelUp > 0
+        ? (_currentLevelProgress / _totalPoolForLevelUp)
+        : 0.0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -372,7 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   TextSpan(text: 'Lv.${_currentLevel + 1}까지 '),
                   TextSpan(
-                    text: '$requiredGrass',
+                    text: '$_poolNeededForNextLevel',
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       color: AppColors.textMain,
