@@ -6,6 +6,7 @@ import '../widgets/falling_leaves.dart';
 import '../services/member_service.dart';
 import '../theme/app_colors.dart';
 import 'closet_screen.dart';
+import 'my_info_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final void Function(int tabIndex)? onNavigateToTab;
@@ -67,7 +68,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _navigateToProfile() {
-    widget.onNavigateToTab?.call(3);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MyInfoScreen()),
+    );
   }
 
   String _getCharacterImagePath() {

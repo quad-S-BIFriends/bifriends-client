@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'learning_screen.dart';
 import 'conversation_screen.dart';
-
-import 'my_info_screen.dart';
+import 'friends_screen.dart';
 import '../widgets/guide_tour_overlay.dart';
 import '../widgets/rocket_animation.dart';
 import '../theme/app_colors.dart';
@@ -33,8 +32,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     HomeScreen(onNavigateToTab: _navigateToTab),
     const LearningScreen(),
     const ConversationScreen(),
-
-    const MyInfoScreen(),
+    const FriendsScreen(),
   ];
 
   void _navigateToTab(int index) {
