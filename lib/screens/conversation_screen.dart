@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/chat_model.dart';
+import '../services/stt_service.dart';
 import '../theme/app_colors.dart';
 
 class ConversationScreen extends StatefulWidget {
@@ -14,6 +15,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isHistoryOpen = false;
   bool _isSessionsExpanded = false;
+  bool _isListening = false;
+  bool _isTranscribing = false;
+  final SttService _sttService = SttService();
 
   // TODO: BE 연동 시 API로 교체
   String _activeSessionId = 'session_1';
@@ -45,7 +49,31 @@ class _ConversationScreenState extends State<ConversationScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _sttService.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleListening() async {
+    if (_isTranscribing) return;
+
+    if (_isListening) {
+      setState(() {
+        _isListening = false;
+        _isTranscribing = true;
+      });
+      final result = await _sttService.stopAndTranscribe();
+      setState(() {
+        _isTranscribing = false;
+        if (result != null && result.isNotEmpty) {
+          _messageController.text = result;
+        }
+      });
+    } else {
+      final hasPermission = await _sttService.hasPermission();
+      if (!hasPermission) return;
+      await _sttService.startRecording();
+      setState(() => _isListening = true);
+    }
   }
 
   void _sendMessage() {
@@ -260,14 +288,21 @@ class _ConversationScreenState extends State<ConversationScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(
-              Icons.mic_none,
-              color: AppColors.textSub,
-              size: 26,
-            ),
-            onPressed: () {
-              // TODO: 음성 입력 STT
-            },
+            icon: _isTranscribing
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
+                  )
+                : Icon(
+                    _isListening ? Icons.mic : Icons.mic_none,
+                    color: _isListening ? AppColors.primary : AppColors.textSub,
+                    size: 26,
+                  ),
+            onPressed: _toggleListening,
           ),
           Expanded(
             child: Container(
