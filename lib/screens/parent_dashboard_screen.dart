@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/growth_report_model.dart';
 import '../theme/app_colors.dart';
+import '../widgets/guardian_mission_sheet.dart';
 
 class ParentDashboardScreen extends StatelessWidget {
   const ParentDashboardScreen({super.key});
@@ -50,7 +51,7 @@ class ParentDashboardScreen extends StatelessWidget {
             bottom: 20,
             left: 24,
             right: 24,
-            child: _buildMissionButton(),
+            child: _buildMissionButton(context),
           ),
         ],
       ),
@@ -401,10 +402,15 @@ class ParentDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMissionButton() {
+  Widget _buildMissionButton(BuildContext context) {
     return ElevatedButton(
       onPressed: () {
-        // TODO: 보호자 미션 받기 API 호출
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          isScrollControlled: true,
+          builder: (_) => const GuardianMissionSheet(),
+        );
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
