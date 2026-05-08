@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:bifriends_client/firebase_options.dart';
+import '../config/api_config.dart';
 
 class AuthResponse {
   final String accessToken;
@@ -43,13 +44,6 @@ class AuthService {
   );
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  String get _baseUrl {
-    if (kIsWeb) return 'http://127.0.0.1:8080';
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:8080'
-        : 'http://127.0.0.1:8080';
-  }
-
   Future<AuthResponse?> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -77,7 +71,7 @@ class AuthService {
       }
 
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/v1/members/auth/google'),
+        Uri.parse('${ApiConfig.baseUrl}/api/v1/members/auth/google'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'idToken': firebaseIdToken}),
       );

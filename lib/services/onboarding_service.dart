@@ -1,18 +1,10 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../config/api_config.dart';
 
 class OnboardingService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-
-  String get _baseUrl {
-    if (kIsWeb) return 'http://localhost:8080';
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:8080'
-        : 'http://localhost:8080';
-  }
 
   Future<Map<String, String>> _getHeaders() async {
     final String? accessToken = await _storage.read(key: 'accessToken');
@@ -26,7 +18,7 @@ class OnboardingService {
   }
 
   Future<void> updateProfile({required String nickname, required int grade}) async {
-    final url = Uri.parse('$_baseUrl/api/v1/onboarding/profile');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/onboarding/profile');
     final headers = await _getHeaders();
     final body = jsonEncode({
       'nickname': nickname,
@@ -41,7 +33,7 @@ class OnboardingService {
   }
 
   Future<void> updateInterests({required List<String> interests}) async {
-    final url = Uri.parse('$_baseUrl/api/v1/onboarding/interests');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/onboarding/interests');
     final headers = await _getHeaders();
     final body = jsonEncode({
       'interests': interests,
@@ -55,7 +47,7 @@ class OnboardingService {
   }
 
   Future<void> selectGift({required String itemType}) async {
-    final url = Uri.parse('$_baseUrl/api/v1/onboarding/gift');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/onboarding/gift');
     final headers = await _getHeaders();
     final body = jsonEncode({
       'itemType': itemType,
@@ -71,7 +63,7 @@ class OnboardingService {
     required bool notificationEnabled,
     required bool microphoneEnabled,
   }) async {
-    final url = Uri.parse('$_baseUrl/api/v1/onboarding/permissions');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/onboarding/permissions');
     final headers = await _getHeaders();
     final body = jsonEncode({
       'notificationEnabled': notificationEnabled,
@@ -86,7 +78,7 @@ class OnboardingService {
   }
 
   Future<void> completeOnboarding() async {
-    final url = Uri.parse('$_baseUrl/api/v1/onboarding/complete');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/onboarding/complete');
     final headers = await _getHeaders();
 
     final response = await http.post(url, headers: headers, body: jsonEncode({}));

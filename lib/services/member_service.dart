@@ -1,19 +1,11 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../config/api_config.dart';
 import '../models/member_model.dart';
 
 class MemberService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-
-  String get _baseUrl {
-    if (kIsWeb) return 'http://127.0.0.1:8080';
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:8080'
-        : 'http://127.0.0.1:8080';
-  }
 
   Future<Map<String, String>> _getHeaders() async {
     final String? accessToken = await _storage.read(key: 'accessToken');
@@ -27,7 +19,7 @@ class MemberService {
   }
 
   Future<Member> getMe() async {
-    final url = Uri.parse('$_baseUrl/api/v1/members/me');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/members/me');
     final headers = await _getHeaders();
 
     final response = await http.get(url, headers: headers);
