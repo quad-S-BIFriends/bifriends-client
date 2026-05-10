@@ -31,6 +31,29 @@ final _mockData = FriendsActivityData(
       ),
     ],
   ),
+  step3: FriendsStep3Data(
+    scene: Step3DialogScene(
+      scenarioText: '수업이 끝나고 친구가 갑자기 크게 소리를 질렀어.',
+      speakerLabel: '친',
+      speakerFullLabel: '친구(이)가 말했어:',
+      speakerMessage: '"야, 깜짝이야! 왜 그렇게 갑자기 소리질러?"',
+    ),
+    question: '가장 알맞은 대답을 골라주세요!',
+    correctIndex: 1,
+    options: [
+      Step3AnswerOption(
+        text: '몰라, 그냥!',
+        wrongGuidance: '친구가 어떤 마음인지 생각해보자. 다시 골라봐!',
+      ),
+      Step3AnswerOption(text: '미안해, 나도 모르게 놀랐어.'),
+      Step3AnswerOption(
+        text: '왜 내가 사과해야 해?',
+        wrongGuidance: '친구의 기분을 먼저 생각해보는 건 어떨까?',
+      ),
+    ],
+    correctEcho: '미안해, 나도 모르게 놀랐어.',
+    leoFeedback: '완벽해! 친구의 마음을 이해하고 잘 대답했어! 🎉',
+  ),
 );
 
 const int _totalSteps = 4;
@@ -55,6 +78,10 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
   int _step2SelectedIndex = -1;
   bool _step2Evaluated = false; // "이 마음 같아!" 버튼이 눌렸는지
   bool _step2IsCorrect = false; // 마지막 제출이 정답인지
+
+  // Step 3 state
+  int _step3SelectedIndex = -1;
+  bool _step3IsCorrect = false;
 
   FriendsActivityData get _data => widget.data ?? _mockData;
 
@@ -153,12 +180,12 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Padding(
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
@@ -181,10 +208,10 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
                 ],
               ),
             ),
-            if (_showSuccessOverlay) _buildSuccessOverlay(),
-          ],
+          ),
         ),
-      ),
+        if (_showSuccessOverlay) _buildSuccessOverlay(),
+      ],
     );
   }
 
@@ -371,6 +398,12 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           return _buildComingSoonPlaceholder(key: key, stepLabel: 'Step 2');
         }
         return _buildStep2(key: key, data: step2);
+      case 2:
+        final step3 = _data.step3;
+        if (step3 == null) {
+          return _buildComingSoonPlaceholder(key: key, stepLabel: 'Step 3');
+        }
+        return _buildStep3(key: key, data: step3);
       default:
         return _buildComingSoonPlaceholder(
           key: key,
@@ -966,7 +999,401 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
   }
 
   // ─────────────────────────────────────────────
-  // Placeholder (Steps 3~4)
+  // Step 3 — 대화 연습 (EMO-13~17)
+  // ─────────────────────────────────────────────
+
+  Widget _buildStep3({required Key key, required FriendsStep3Data data}) {
+    return SingleChildScrollView(
+      key: key,
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildStep3ScenarioCard(data.scene),
+          const SizedBox(height: 16),
+          Text(
+            data.question,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSub,
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (int i = 0; i < data.options.length; i++) ...[
+            _buildStep3Choice(data, i),
+            if (i < data.options.length - 1) const SizedBox(height: 10),
+          ],
+          if (_step3SelectedIndex != -1 && !_step3IsCorrect) ...[
+            const SizedBox(height: 12),
+            _buildStep3WrongGuidance(
+              data.options[_step3SelectedIndex].wrongGuidance,
+            ),
+          ],
+          if (_step3IsCorrect) ...[
+            const SizedBox(height: 16),
+            _buildStep3CorrectEcho(data.correctEcho),
+            const SizedBox(height: 12),
+            _buildStep3LeoFeedback(data.leoFeedback),
+            const SizedBox(height: 16),
+            _buildStep3NextButton(),
+          ],
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep3ScenarioCard(Step3DialogScene scene) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFEBE6DF), width: 1),
+              ),
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  '💬 대화 연습',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Text(
+              scene.scenarioText,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSub,
+                height: 1.5,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: _buildStep3SpeakerBubble(scene),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep3SpeakerBubble(Step3DialogScene scene) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5C9B8),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  scene.speakerLabel,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textMain,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              scene.speakerFullLabel,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSub,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.cardLight,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+            ),
+            child: Text(
+              scene.speakerMessage,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMain,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep3Choice(FriendsStep3Data data, int index) {
+    final option = data.options[index];
+    final isSelected = _step3SelectedIndex == index;
+    final isCorrect = index == data.correctIndex;
+
+    Color borderColor = const Color(0xFFEBE6DF);
+    Color bgColor = Colors.white;
+    Color textColor = AppColors.textMain;
+    Color numBgColor = AppColors.cardLight;
+    Color numTextColor = AppColors.textSub;
+
+    if (isSelected) {
+      if (isCorrect) {
+        borderColor = AppColors.primary;
+        bgColor = const Color(0xFFEAF3E8);
+        textColor = AppColors.primary;
+        numBgColor = AppColors.primary;
+        numTextColor = Colors.white;
+      } else {
+        borderColor = const Color(0xFFE8A09A);
+        bgColor = const Color(0xFFFFF2F1);
+        textColor = const Color(0xFFD04B44);
+        numBgColor = const Color(0xFFE8A09A);
+        numTextColor = Colors.white;
+      }
+    }
+
+    return GestureDetector(
+      onTap: () {
+        if (_step3IsCorrect) return;
+        setState(() {
+          _step3SelectedIndex = index;
+          _step3IsCorrect = index == data.correctIndex;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: numBgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  '${index + 1}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: numTextColor,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                option.text,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: textColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStep3WrongGuidance(String guidance) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF6F5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFDAD8), width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('💭 ', style: TextStyle(fontSize: 16)),
+          Expanded(
+            child: Text(
+              guidance,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFFD04B44),
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep3CorrectEcho(String echo) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5ECD8),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Text('💬 ', style: TextStyle(fontSize: 18)),
+          Expanded(
+            child: Text(
+              echo,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textMain,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep3LeoFeedback(String feedback) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: const BoxDecoration(
+            color: Color(0xFFF5C9B8),
+            shape: BoxShape.circle,
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/leo_defaultface.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              feedback,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMain,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep3NextButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _showSuccessOverlay ? null : _handleNext,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 0,
+        ),
+        child: const Text(
+          '다음 이야기 보기',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Placeholder (Step 4)
   // ─────────────────────────────────────────────
 
   Widget _buildComingSoonPlaceholder({
