@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'friends_activity_screen.dart';
 
 class StoryLoadingScreen extends StatefulWidget {
   const StoryLoadingScreen({super.key});
@@ -28,7 +29,14 @@ class _StoryLoadingScreenState extends State<StoryLoadingScreen>
 
     // TODO: BE 연동 시 실제 로딩 완료 시점으로 교체
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const FriendsActivityScreen(),
+          ),
+        );
+      }
     });
   }
 
