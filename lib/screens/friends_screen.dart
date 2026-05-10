@@ -30,7 +30,7 @@ class FriendsScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 6),
                     Text(
-                      '오늘은 레오랑 어떤 표현을 배우게 될까요? 😊',
+                      '오늘은 레오랑 어떤 표현을 배우게 될까요? 🤩',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
