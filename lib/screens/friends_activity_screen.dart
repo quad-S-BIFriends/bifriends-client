@@ -49,9 +49,39 @@ final _mockData = FriendsActivityData(
     ],
     correctExplanation: '맞아! 친구가 갑자기 "왁!" 하고 놀래켰기 때문에 지수는 가슴이 철렁 놀랐어.',
   ),
+  step4: FriendsStep4Data(
+    leoIntroMessage:
+        '맞아요! 친구가 갑자기 놀래켰기 때문에 지수는 깜짝 놀랐어요. 이럴 때 여러분이라면 뭐라고 말해줄까요?',
+    scene: Step4Scene(
+      scenarioText: '지수가 깜짝 놀라자, 친구가 다가와서 말했어.',
+      speakerLabel: '친',
+      speakerFullLabel: '친구(이)가 말했어:',
+      speakerMessage: '"야, 나도 깜짝 놀랬잖아. 괜찮아?"',
+    ),
+    question: '가장 알맞은 대답을 골라주세요!',
+    correctIndex: 0,
+    options: [
+      Step4ResponseOption(text: '"응, 나도 많이 놀랐어. 괜찮아!"'),
+      Step4ResponseOption(
+        text: '"왜 놀래켜! 진짜 짜증나!"',
+        wrongExplanation: '화를 내는 건 친구를 속상하게 할 수 있어. 친구의 마음을 먼저 생각해봐!',
+      ),
+      Step4ResponseOption(
+        text: '"아 배고파, 간식 먹으러 가자!"',
+        wrongExplanation: '상황과 관계없는 말이야. 친구의 마음을 먼저 살펴봐!',
+      ),
+    ],
+    correctEcho: '"응, 나도 많이 놀랐어. 괜찮아!"',
+    leoFeedback: '완벽해요! 자신의 마음을 솔직하게 말하면서 친구에게도 다정하게 대답했어요! 🌟',
+  ),
+  step5: FriendsStep5Data(
+    leoMessage: '오늘 정말 즐거웠어! 마지막으로 리오에게 해주고 싶은 말이 있니?',
+    promptLabel: '리오에게 인사해볼까?',
+    farewellOptions: ['다음에 또 만나!', '오늘 재미있었어!', '리오 고마워!'],
+  ),
 );
 
-const int _totalSteps = 4;
+const int _totalSteps = 5;
 
 class FriendsActivityScreen extends StatefulWidget {
   // TODO: BE 연동 시 data 파라미터로 API 응답 전달
@@ -77,6 +107,14 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
   int _step3Panel = 0;
   int _step3SelectedIndex = -1;
   bool _step3IsCorrect = false;
+
+  // Step 4 state
+  int _step4SelectedIndex = -1;
+  bool _step4IsCorrect = false;
+
+  // Step 5 state
+  int _step5SelectedIndex = -1;
+  bool _step5Loading = false;
 
   FriendsActivityData get _data => widget.data ?? _mockData;
 
@@ -106,6 +144,16 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
     } else {
       _showCompletionDialog();
     }
+  }
+
+  // Step 5 완료 — Firestore 저장 후 세션 종료 (EMO-23, EMO-24)
+  void _handleComplete() {
+    _saveMindSession();
+    _showCompletionDialog();
+  }
+
+  void _saveMindSession() {
+    // TODO: BE 연동 — Firestore mindSessions 서브 컬렉션에 새 문서로 저장 (EMO-24)
   }
 
   void _showCompletionDialog() {
@@ -399,6 +447,18 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           return _buildComingSoonPlaceholder(key: key, stepLabel: 'Step 3');
         }
         return _buildStep3(key: key, data: step3);
+      case 3:
+        final step4 = _data.step4;
+        if (step4 == null) {
+          return _buildComingSoonPlaceholder(key: key, stepLabel: 'Step 4');
+        }
+        return _buildStep4(key: key, data: step4);
+      case 4:
+        final step5 = _data.step5;
+        if (step5 == null) {
+          return _buildComingSoonPlaceholder(key: key, stepLabel: 'Step 5');
+        }
+        return _buildStep5(key: key, data: step5);
       default:
         return _buildComingSoonPlaceholder(
           key: key,
@@ -1259,7 +1319,631 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
   }
 
   // ─────────────────────────────────────────────
-  // Placeholder (Step 4)
+  // Step 4 — 대화 연습 / 공감 반응 선택 (EMO-18~22)
+  // ─────────────────────────────────────────────
+
+  Widget _buildStep4({required Key key, required FriendsStep4Data data}) {
+    return SingleChildScrollView(
+      key: key,
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Leo 역할극 메시지 (EMO-18, EMO-19)
+          _buildStep4LeoIntro(data.leoIntroMessage),
+          const SizedBox(height: 12),
+          // 대화 시나리오 카드
+          _buildStep4ScenarioCard(data.scene),
+          const SizedBox(height: 16),
+          Text(
+            data.question,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSub,
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (int i = 0; i < data.options.length; i++) ...[
+            _buildStep4Choice(data, i),
+            if (i < data.options.length - 1) const SizedBox(height: 10),
+          ],
+          // 오답 설명 (EMO-22)
+          if (_step4SelectedIndex != -1 && !_step4IsCorrect) ...[
+            const SizedBox(height: 12),
+            _buildStep4WrongExplanation(
+              data.options[_step4SelectedIndex].wrongExplanation,
+            ),
+          ],
+          // 정답 피드백 + 다음으로 버튼 (EMO-21)
+          if (_step4IsCorrect) ...[
+            const SizedBox(height: 12),
+            _buildStep4CorrectEcho(data.correctEcho),
+            const SizedBox(height: 12),
+            _buildStep4LeoFeedback(data.leoFeedback),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _showSuccessOverlay ? null : _handleNext,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor:
+                      AppColors.primary.withValues(alpha: 0.5),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  '다음으로',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep4LeoIntro(String message) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: const BoxDecoration(
+            color: Color(0xFFF5C9B8),
+            shape: BoxShape.circle,
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/leo_defaultface.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMain,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep4ScenarioCard(Step4Scene scene) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // "대화 연습" 배지 헤더
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFEBE6DF), width: 1),
+              ),
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  '💬 대화 연습',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // 상황 설명
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Text(
+              scene.scenarioText,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSub,
+                height: 1.5,
+              ),
+            ),
+          ),
+          // 발화자 말풍선
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF5C9B8),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          scene.speakerLabel,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textMain,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      scene.speakerFullLabel,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSub,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardLight,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(4),
+                        topRight: Radius.circular(16),
+                        bottomLeft: Radius.circular(16),
+                        bottomRight: Radius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      scene.speakerMessage,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textMain,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep4Choice(FriendsStep4Data data, int index) {
+    final option = data.options[index];
+    final isSelected = _step4SelectedIndex == index;
+    final isCorrect = index == data.correctIndex;
+
+    Color borderColor = const Color(0xFFEBE6DF);
+    Color bgColor = Colors.white;
+    Color textColor = AppColors.textMain;
+    Color numBgColor = AppColors.cardLight;
+    Color numTextColor = AppColors.textSub;
+
+    if (isSelected) {
+      if (isCorrect) {
+        borderColor = AppColors.primary;
+        bgColor = const Color(0xFFEAF3E8);
+        textColor = AppColors.primary;
+        numBgColor = AppColors.primary;
+        numTextColor = Colors.white;
+      } else {
+        borderColor = const Color(0xFFE8A09A);
+        bgColor = const Color(0xFFFFF2F1);
+        textColor = const Color(0xFFD04B44);
+        numBgColor = const Color(0xFFE8A09A);
+        numTextColor = Colors.white;
+      }
+    }
+
+    return GestureDetector(
+      onTap: () {
+        if (_step4IsCorrect) return;
+        setState(() {
+          _step4SelectedIndex = index;
+          _step4IsCorrect = index == data.correctIndex;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: numBgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  '${index + 1}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: numTextColor,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                option.text,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: textColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStep4WrongExplanation(String explanation) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF6F5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFDAD8), width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('💭 ', style: TextStyle(fontSize: 16)),
+          Expanded(
+            child: Text(
+              explanation,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFFD04B44),
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep4CorrectEcho(String echo) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5ECD8),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Text('💬 ', style: TextStyle(fontSize: 18)),
+          Expanded(
+            child: Text(
+              echo,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textMain,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep4LeoFeedback(String feedback) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: const BoxDecoration(
+            color: Color(0xFFF5C9B8),
+            shape: BoxShape.circle,
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/leo_defaultface.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              feedback,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMain,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Step 5 — Leo 인사 / 학습 마무리 (EMO-23)
+  // ─────────────────────────────────────────────
+
+  Widget _buildStep5({required Key key, required FriendsStep5Data data}) {
+    return SingleChildScrollView(
+      key: key,
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Leo 마무리 말풍선
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF5C9B8),
+                  shape: BoxShape.circle,
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/leo_defaultface.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(4),
+                      topRight: Radius.circular(16),
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    data.leoMessage,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMain,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // 사용자 차례 표시
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                data.promptLabel,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSub,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.person,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // 작별 인사 선택지
+          for (int i = 0; i < data.farewellOptions.length; i++) ...[
+            _buildFarewellOption(data.farewellOptions[i], i),
+            if (i < data.farewellOptions.length - 1) const SizedBox(height: 10),
+          ],
+          // 선택 후 로딩 또는 완료 (EMO-23)
+          if (_step5SelectedIndex != -1) ...[
+            const SizedBox(height: 20),
+            if (_step5Loading)
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _DotIndicator(delay: const Duration(milliseconds: 0)),
+                    const SizedBox(width: 6),
+                    _DotIndicator(delay: const Duration(milliseconds: 200)),
+                    const SizedBox(width: 6),
+                    _DotIndicator(delay: const Duration(milliseconds: 400)),
+                  ],
+                ),
+              ),
+          ],
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFarewellOption(String text, int index) {
+    final isSelected = _step5SelectedIndex == index;
+
+    return GestureDetector(
+      onTap: () {
+        if (_step5SelectedIndex != -1) return;
+        setState(() {
+          _step5SelectedIndex = index;
+          _step5Loading = true;
+        });
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            setState(() => _step5Loading = false);
+            _handleComplete();
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : const Color(0xFFEBE6DF),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: isSelected ? Colors.white : AppColors.textMain,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Placeholder (Step 미구현)
   // ─────────────────────────────────────────────
 
   Widget _buildComingSoonPlaceholder({
@@ -1327,6 +2011,57 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// 로딩 점 애니메이션 (Step 5)
+class _DotIndicator extends StatefulWidget {
+  final Duration delay;
+  const _DotIndicator({required this.delay});
+
+  @override
+  State<_DotIndicator> createState() => _DotIndicatorState();
+}
+
+class _DotIndicatorState extends State<_DotIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    Future.delayed(widget.delay, () {
+      if (mounted) _controller.repeat(reverse: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: Container(
+        width: 10,
+        height: 10,
+        decoration: const BoxDecoration(
+          color: AppColors.textSub,
+          shape: BoxShape.circle,
+        ),
       ),
     );
   }
