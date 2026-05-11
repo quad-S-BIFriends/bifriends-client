@@ -25,24 +25,10 @@ class FriendsExpressionData {
   }
 }
 
-// ─── Step 2 ───────────────────────────────────────
+// ─── Step 2 ─── EMO-08 to EMO-11
+// 얼굴 확대 이미지 + 시각적 특징 -> 감정 맞추기 퀴즈
 
-// 3컷 만화 패널 (상황 시작 → 문제 발생 → 감정 발생)
-class ComicPanel {
-  final String? imageUrl; // TODO: BE 연동
-  final String caption;
-
-  const ComicPanel({this.imageUrl, required this.caption});
-
-  factory ComicPanel.fromJson(Map<String, dynamic> json) {
-    return ComicPanel(
-      imageUrl: json['imageUrl'] as String?,
-      caption: json['caption'] as String,
-    );
-  }
-}
-
-// 감정 선택지
+// 감정 선택지 (정답 1 + 유사 오답 2)
 class Step2AnswerOption {
   final String text;
   final String wrongExplanation; // 오답 시 표시 (정답은 빈 문자열)
@@ -58,74 +44,64 @@ class Step2AnswerOption {
 }
 
 class FriendsStep2Data {
-  final List<ComicPanel> panels; // 3컷 만화 (EMO-12)
-  final String question;
-  final List<Step2AnswerOption> options; // 정답 1 + 오답 2 (EMO-09)
+  final String? faceImageUrl; // 얼굴 확대 이미지 (EMO-08) TODO: BE 연동
+  final String visualDescription; // 시각적 특징 설명 (EMO-08)
+  final String question; // "이 친구는 어떤 기분일까요?"
+  final List<Step2AnswerOption> options; // 정답 1 + 유사 오답 2 (EMO-09)
   final int correctIndex;
-  final String successMessage;
+  final String successMessage; // 정답 시 피드백
 
   const FriendsStep2Data({
-    required this.panels,
+    this.faceImageUrl,
+    required this.visualDescription,
     required this.question,
     required this.options,
     required this.correctIndex,
-    this.successMessage = '정말 대단해! 상황을 아주 잘 이해했구나.',
+    this.successMessage = '잘 맞혔어! 표정을 잘 관찰했구나.',
   });
 
   factory FriendsStep2Data.fromJson(Map<String, dynamic> json) {
     return FriendsStep2Data(
-      panels: (json['panels'] as List)
-          .map((e) => ComicPanel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      faceImageUrl: json['faceImageUrl'] as String?,
+      visualDescription: json['visualDescription'] as String,
       question: json['question'] as String,
       options: (json['options'] as List)
           .map((e) => Step2AnswerOption.fromJson(e as Map<String, dynamic>))
           .toList(),
       correctIndex: json['correctIndex'] as int,
       successMessage:
-          (json['successMessage'] as String?) ?? '정말 대단해! 상황을 아주 잘 이해했구나.',
+          (json['successMessage'] as String?) ?? '잘 맞혔어! 표정을 잘 관찰했구나.',
     );
   }
 }
 
-// ─── Step 3 ───────────────────────────────────────
+// ─── Step 3 ─── EMO-12 to EMO-17
+// 3컷 만화 캐러셀 -> 감정 원인 맞추기 퀴즈
 
-// 대화 연습 씬 (EMO-13)
-class Step3DialogScene {
-  final String? imageUrl; // TODO: BE 연동 (만화 컷 이미지)
-  final String scenarioText; // 상황 설명
-  final String speakerLabel; // 아바타 레이블 e.g. "엄"
-  final String speakerFullLabel; // e.g. "엄마(이)가 말했어:"
-  final String speakerMessage; // 발화 내용
+// 만화 컷 (상황 시작 -> 문제 발생 -> 감정 발생)
+class ComicPanel {
+  final String? imageUrl; // TODO: BE 연동
+  final String caption; // 각 컷의 짧은 문장 (EMO-13)
 
-  const Step3DialogScene({
-    this.imageUrl,
-    required this.scenarioText,
-    required this.speakerLabel,
-    required this.speakerFullLabel,
-    required this.speakerMessage,
-  });
+  const ComicPanel({this.imageUrl, required this.caption});
 
-  factory Step3DialogScene.fromJson(Map<String, dynamic> json) {
-    return Step3DialogScene(
+  factory ComicPanel.fromJson(Map<String, dynamic> json) {
+    return ComicPanel(
       imageUrl: json['imageUrl'] as String?,
-      scenarioText: json['scenarioText'] as String,
-      speakerLabel: json['speakerLabel'] as String,
-      speakerFullLabel: json['speakerFullLabel'] as String,
-      speakerMessage: json['speakerMessage'] as String,
+      caption: json['caption'] as String,
     );
   }
 }
 
-// 대화 선택지
-class Step3AnswerOption {
+// 감정 원인 선택지
+class Step3CauseOption {
   final String text;
-  final String wrongGuidance; 
+  final String wrongGuidance; // 오답 시 장면 재확인 안내 (EMO-16)
 
-  const Step3AnswerOption({required this.text, this.wrongGuidance = ''});
+  const Step3CauseOption({required this.text, this.wrongGuidance = ''});
 
-  factory Step3AnswerOption.fromJson(Map<String, dynamic> json) {
-    return Step3AnswerOption(
+  factory Step3CauseOption.fromJson(Map<String, dynamic> json) {
+    return Step3CauseOption(
       text: json['text'] as String,
       wrongGuidance: (json['wrongGuidance'] as String?) ?? '',
     );
@@ -133,32 +109,31 @@ class Step3AnswerOption {
 }
 
 class FriendsStep3Data {
-  final Step3DialogScene scene;
-  final String question;
-  final List<Step3AnswerOption> options;
+  final List<ComicPanel> panels; // 3컷 만화 (EMO-12, EMO-13)
+  final String question; // "어떤 일이 있어서 이런 기분이 들었을까요?" (EMO-14)
+  final List<Step3CauseOption> options;
   final int correctIndex;
-  final String correctEcho;
-  final String leoFeedback;
+  final String correctExplanation; // 정답 시 원인 설명 (EMO-15)
 
   const FriendsStep3Data({
-    required this.scene,
+    required this.panels,
     required this.question,
     required this.options,
     required this.correctIndex,
-    required this.correctEcho,
-    required this.leoFeedback,
+    required this.correctExplanation,
   });
 
   factory FriendsStep3Data.fromJson(Map<String, dynamic> json) {
     return FriendsStep3Data(
-      scene: Step3DialogScene.fromJson(json['scene'] as Map<String, dynamic>),
+      panels: (json['panels'] as List)
+          .map((e) => ComicPanel.fromJson(e as Map<String, dynamic>))
+          .toList(),
       question: json['question'] as String,
       options: (json['options'] as List)
-          .map((e) => Step3AnswerOption.fromJson(e as Map<String, dynamic>))
+          .map((e) => Step3CauseOption.fromJson(e as Map<String, dynamic>))
           .toList(),
       correctIndex: json['correctIndex'] as int,
-      correctEcho: json['correctEcho'] as String,
-      leoFeedback: json['leoFeedback'] as String,
+      correctExplanation: json['correctExplanation'] as String,
     );
   }
 }
