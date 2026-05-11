@@ -1,0 +1,919 @@
+enum CycleType { concept, choice, shortAnswer }
+
+class ConceptSlide {
+  final String image;
+  final String text;
+  final String confirmButtonText;
+
+  const ConceptSlide({
+    required this.image,
+    required this.text,
+    required this.confirmButtonText,
+  });
+
+  factory ConceptSlide.fromJson(Map<String, dynamic> json) => ConceptSlide(
+        image: json['image'] as String,
+        text: json['text'] as String,
+        confirmButtonText: json['confirm_button_text'] as String,
+      );
+}
+
+class ChoiceQuestion {
+  final String questionText;
+  final List<String> options;
+  final String answer;
+  final List<String> hints;
+  final String explanation;
+  final int difficulty;
+
+  const ChoiceQuestion({
+    required this.questionText,
+    required this.options,
+    required this.answer,
+    required this.hints,
+    required this.explanation,
+    required this.difficulty,
+  });
+
+  factory ChoiceQuestion.fromJson(Map<String, dynamic> json) => ChoiceQuestion(
+        questionText: json['question_text'] as String,
+        options: List<String>.from(json['options'] as List),
+        answer: json['answer'] as String,
+        hints: List<String>.from(json['hints'] as List),
+        explanation: json['explanation'] as String,
+        difficulty: json['difficulty'] as int,
+      );
+}
+
+class ShortAnswerQuestion {
+  final String questionText;
+  final String answer;
+  final List<String> hints;
+  final String explanation;
+  final int difficulty;
+
+  const ShortAnswerQuestion({
+    required this.questionText,
+    required this.answer,
+    required this.hints,
+    required this.explanation,
+    required this.difficulty,
+  });
+
+  factory ShortAnswerQuestion.fromJson(Map<String, dynamic> json) =>
+      ShortAnswerQuestion(
+        questionText: json['question_text'] as String,
+        answer: json['answer'] as String,
+        hints: List<String>.from(json['hints'] as List),
+        explanation: json['explanation'] as String,
+        difficulty: json['difficulty'] as int,
+      );
+}
+
+class LearningCycle {
+  final String cycleId;
+  final CycleType type;
+  final List<ConceptSlide>? slides;
+  final List<ChoiceQuestion>? choiceQuestions;
+  final List<ShortAnswerQuestion>? shortAnswerQuestions;
+
+  const LearningCycle({
+    required this.cycleId,
+    required this.type,
+    this.slides,
+    this.choiceQuestions,
+    this.shortAnswerQuestions,
+  });
+
+  int get questionCount =>
+      slides?.length ??
+      choiceQuestions?.length ??
+      shortAnswerQuestions?.length ??
+      0;
+
+  factory LearningCycle.fromJson(Map<String, dynamic> json) {
+    final CycleType type;
+    switch (json['cycle_type'] as String) {
+      case 'concept':
+        type = CycleType.concept;
+        break;
+      case 'choice':
+        type = CycleType.choice;
+        break;
+      case 'short_answer':
+        type = CycleType.shortAnswer;
+        break;
+      default:
+        type = CycleType.concept;
+    }
+    return LearningCycle(
+      cycleId: json['cycle_id'] as String,
+      type: type,
+      slides: type == CycleType.concept
+          ? (json['slides'] as List)
+              .map((s) => ConceptSlide.fromJson(s as Map<String, dynamic>))
+              .toList()
+          : null,
+      choiceQuestions: type == CycleType.choice
+          ? (json['questions'] as List)
+              .map((q) => ChoiceQuestion.fromJson(q as Map<String, dynamic>))
+              .toList()
+          : null,
+      shortAnswerQuestions: type == CycleType.shortAnswer
+          ? (json['questions'] as List)
+              .map((q) =>
+                  ShortAnswerQuestion.fromJson(q as Map<String, dynamic>))
+              .toList()
+          : null,
+    );
+  }
+}
+
+class LearningStep {
+  final String stepId;
+  final String stepTitle;
+  final String stepDescription;
+  final List<LearningCycle> cycles;
+
+  const LearningStep({
+    required this.stepId,
+    required this.stepTitle,
+    required this.stepDescription,
+    required this.cycles,
+  });
+
+  factory LearningStep.fromJson(Map<String, dynamic> json) => LearningStep(
+        stepId: json['step_id'] as String,
+        stepTitle: json['step_title'] as String,
+        stepDescription: json['step_description'] as String? ?? '',
+        cycles: (json['cycles'] as List)
+            .map((c) => LearningCycle.fromJson(c as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
+// ---------------------------------------------------------------------------
+// Mock data — replace each entry with a real API call when BE is ready
+// ---------------------------------------------------------------------------
+
+LearningStep mockStepForLevel(int level) {
+  switch (level) {
+    case 1:
+      return _level1Step;
+    case 2:
+      return _level2Step;
+    case 3:
+      return _level3Step;
+    case 4:
+      return _level4Step;
+    case 5:
+      return _level5Step;
+    default:
+      return _level1Step;
+  }
+}
+
+// ── Level 1: 숫자 세기 ───────────────────────────────────────────────────────
+
+final _level1Step = LearningStep(
+  stepId: 'math_level_1_step_1',
+  stepTitle: '숫자 세기',
+  stepDescription: '1부터 10까지 세어봐요',
+  cycles: [
+    // Cycle 1: concept
+    LearningCycle(
+      cycleId: 'math_l1_c1',
+      type: CycleType.concept,
+      slides: const [
+        ConceptSlide(
+          image: '🔢',
+          text: '숫자는 물건의 개수를 나타내요.\n우리 주변 곳곳에 숫자가 있답니다!',
+          confirmButtonText: '다음',
+        ),
+        ConceptSlide(
+          image: '🖐',
+          text: '하나, 둘, 셋, 넷, 다섯!\n손가락을 하나씩 펴면서 세어봐요.',
+          confirmButtonText: '다음',
+        ),
+        ConceptSlide(
+          image: '🙌',
+          text: '여섯, 일곱, 여덟, 아홉, 열!\n양손을 모두 써서 세어봐요.',
+          confirmButtonText: '이해했어요!',
+        ),
+      ],
+    ),
+    // Cycle 2: choice
+    LearningCycle(
+      cycleId: 'math_l1_c2',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '🍎🍎🍎\n사과가 몇 개인가요?',
+          options: ['2', '3', '4'],
+          answer: '3',
+          hints: ['사과를 하나씩 짚어보세요', '손가락으로 하나씩 세어봐요', '정답은 3이에요'],
+          explanation: '사과가 3개 있어요!',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '⭐⭐\n별이 몇 개인가요?',
+          options: ['1', '2', '3'],
+          answer: '2',
+          hints: ['별을 하나씩 세어봐요', '별이 두 개 있어요', '정답은 2이에요'],
+          explanation: '별이 2개 있어요!',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '🏀🏀🏀🏀🏀\n공이 몇 개인가요?',
+          options: ['4', '5', '6'],
+          answer: '5',
+          hints: ['공을 한 개씩 짚어봐요', '4개보다 1개 더 많아요', '정답은 5이에요'],
+          explanation: '공이 5개 있어요!',
+          difficulty: 1,
+        ),
+      ],
+    ),
+    // Cycle 3: choice
+    LearningCycle(
+      cycleId: 'math_l1_c3',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '3보다 큰 숫자는\n무엇인가요?',
+          options: ['1', '2', '5'],
+          answer: '5',
+          hints: ['숫자가 클수록 개수가 많아요', '1, 2는 3보다 작아요', '정답은 5이에요'],
+          explanation: '5는 3보다 큰 숫자예요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '1, 2, 3 다음에\n오는 숫자는?',
+          options: ['2', '4', '5'],
+          answer: '4',
+          hints: ['숫자는 순서가 있어요', '3 바로 다음 수를 찾아봐요', '정답은 4이에요'],
+          explanation: '1, 2, 3, 4! 다음은 4예요',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '6, 2, 9 중에서\n가장 작은 숫자는?',
+          options: ['6', '2', '9'],
+          answer: '2',
+          hints: ['손가락으로 세어 비교해봐요', '2는 6보다, 9보다 작아요', '정답은 2이에요'],
+          explanation: '2가 가장 작은 숫자예요!',
+          difficulty: 2,
+        ),
+      ],
+    ),
+    // Cycle 4: choice
+    LearningCycle(
+      cycleId: 'math_l1_c4',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '손가락 한 손에는\n몇 개인가요?',
+          options: ['4', '5', '6'],
+          answer: '5',
+          hints: ['한 손을 펴봐요', '손가락을 하나씩 세어봐요', '정답은 5이에요'],
+          explanation: '한 손 손가락은 5개예요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '🍪🍪🍪🍪\n쿠키 4개에서 1개를\n먹으면 몇 개 남아요?',
+          options: ['2', '3', '4'],
+          answer: '3',
+          hints: ['쿠키를 하나 지워봐요', '4에서 1을 빼면 돼요', '정답은 3이에요'],
+          explanation: '4-1=3, 쿠키가 3개 남아요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '사과 2개와 귤 3개를\n합치면 몇 개인가요?',
+          options: ['4', '5', '6'],
+          answer: '5',
+          hints: ['손가락으로 2개, 3개 따로 세어봐요', '둘을 합치면 몇 개?', '정답은 5이에요'],
+          explanation: '2+3=5, 모두 5개예요!',
+          difficulty: 3,
+        ),
+      ],
+    ),
+    // Cycle 5: short_answer
+    LearningCycle(
+      cycleId: 'math_l1_c5',
+      type: CycleType.shortAnswer,
+      shortAnswerQuestions: const [
+        ShortAnswerQuestion(
+          questionText: '🍎🍎🍎🍎\n사과는 몇 개인가요?',
+          answer: '4',
+          hints: ['사과를 하나씩 짚어봐요', '손가락으로 세어봐요', '정답은 4이에요'],
+          explanation: '사과가 4개 있어요!',
+          difficulty: 4,
+        ),
+        ShortAnswerQuestion(
+          questionText: '⭐⭐⭐⭐⭐⭐\n별은 몇 개인가요?',
+          answer: '6',
+          hints: ['별을 하나씩 세어봐요', '5보다 1개 더 많아요', '정답은 6이에요'],
+          explanation: '별이 6개 있어요!',
+          difficulty: 4,
+        ),
+        ShortAnswerQuestion(
+          questionText: '양손 손가락을 모두\n펴면 몇 개인가요?',
+          answer: '10',
+          hints: ['양손을 펴봐요', '한 손이 5개, 두 손이면?', '정답은 10이에요'],
+          explanation: '양손 손가락은 모두 10개예요!',
+          difficulty: 4,
+        ),
+      ],
+    ),
+  ],
+);
+
+// ── Level 2: 도형 알기 ───────────────────────────────────────────────────────
+
+final _level2Step = LearningStep(
+  stepId: 'math_level_2_step_1',
+  stepTitle: '도형 알기',
+  stepDescription: '세모 네모 동그라미를 찾아요',
+  cycles: [
+    LearningCycle(
+      cycleId: 'math_l2_c1',
+      type: CycleType.concept,
+      slides: const [
+        ConceptSlide(
+          image: '🔷',
+          text: '도형은 선으로 이루어진 모양이에요.\n세모, 네모, 동그라미가 대표적이에요!',
+          confirmButtonText: '다음',
+        ),
+        ConceptSlide(
+          image: '🔺🟦⭕',
+          text: '세모(삼각형), 네모(사각형),\n동그라미(원)를 알아봐요!',
+          confirmButtonText: '다음',
+        ),
+        ConceptSlide(
+          image: '🏠',
+          text: '지붕은 세모, 창문은 네모,\n시계는 동그라미! 어디에나 있어요.',
+          confirmButtonText: '이해했어요!',
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l2_c2',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '⭕\n이것은 무슨 도형인가요?',
+          options: ['세모', '네모', '동그라미'],
+          answer: '동그라미',
+          hints: ['모서리가 있나요?', '둥글둥글한 모양이에요', '정답은 동그라미예요'],
+          explanation: '⭕ 은 동그라미(원)예요!',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '🔺\n이것은 무슨 도형인가요?',
+          options: ['세모', '네모', '동그라미'],
+          answer: '세모',
+          hints: ['모서리가 몇 개인지 세어봐요', '뾰족한 부분이 3개예요', '정답은 세모예요'],
+          explanation: '🔺 은 세모(삼각형)예요!',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '🟦\n이것은 무슨 도형인가요?',
+          options: ['세모', '네모', '동그라미'],
+          answer: '네모',
+          hints: ['모서리가 몇 개인지 세어봐요', '꼭짓점이 4개예요', '정답은 네모예요'],
+          explanation: '🟦 은 네모(사각형)예요!',
+          difficulty: 1,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l2_c3',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '모서리(꼭짓점)가\n3개인 도형은?',
+          options: ['세모', '네모', '동그라미'],
+          answer: '세모',
+          hints: ['손가락으로 꼭짓점을 짚어봐요', '삼각형의 꼭짓점은 3개예요', '정답은 세모예요'],
+          explanation: '세모(삼각형)의 꼭짓점은 3개예요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '모서리(꼭짓점)가\n4개인 도형은?',
+          options: ['세모', '네모', '동그라미'],
+          answer: '네모',
+          hints: ['사각형의 꼭짓점을 세어봐요', '네 모서리가 있어요', '정답은 네모예요'],
+          explanation: '네모(사각형)의 꼭짓점은 4개예요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '꼭짓점이 없는\n도형은?',
+          options: ['세모', '네모', '동그라미'],
+          answer: '동그라미',
+          hints: ['뾰족한 부분이 있나요?', '둥글어서 꼭짓점이 없어요', '정답은 동그라미예요'],
+          explanation: '동그라미(원)는 꼭짓점이 없어요!',
+          difficulty: 2,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l2_c4',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '시계는 어떤 도형과\n닮았나요?',
+          options: ['세모', '네모', '동그라미'],
+          answer: '동그라미',
+          hints: ['시계의 모양을 떠올려봐요', '둥글둥글한 모양이에요', '정답은 동그라미예요'],
+          explanation: '시계는 동그라미(원) 모양이에요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '책은 어떤 도형과\n닮았나요?',
+          options: ['세모', '네모', '동그라미'],
+          answer: '네모',
+          hints: ['책의 모양을 떠올려봐요', '네 개의 모서리가 있어요', '정답은 네모예요'],
+          explanation: '책은 네모(사각형) 모양이에요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '산의 모양은 어떤\n도형과 닮았나요?',
+          options: ['세모', '네모', '동그라미'],
+          answer: '세모',
+          hints: ['산의 모양을 떠올려봐요', '꼭대기가 뾰족해요', '정답은 세모예요'],
+          explanation: '산은 세모(삼각형) 모양이에요!',
+          difficulty: 2,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l2_c5',
+      type: CycleType.shortAnswer,
+      shortAnswerQuestions: const [
+        ShortAnswerQuestion(
+          questionText: '세모(삼각형)의\n꼭짓점은 몇 개인가요?',
+          answer: '3',
+          hints: ['꼭짓점은 뾰족한 부분이에요', '세모의 뾰족한 곳을 세어봐요', '정답은 3이에요'],
+          explanation: '세모의 꼭짓점은 3개예요!',
+          difficulty: 4,
+        ),
+        ShortAnswerQuestion(
+          questionText: '네모(사각형)의\n변은 몇 개인가요?',
+          answer: '4',
+          hints: ['변은 도형의 선이에요', '네모의 선을 하나씩 세어봐요', '정답은 4이에요'],
+          explanation: '네모의 변은 4개예요!',
+          difficulty: 4,
+        ),
+        ShortAnswerQuestion(
+          questionText: '동그라미(원)의\n꼭짓점은 몇 개인가요?',
+          answer: '0',
+          hints: ['꼭짓점은 뾰족한 부분이에요', '동그라미에 뾰족한 곳이 있나요?', '정답은 0이에요'],
+          explanation: '동그라미에는 꼭짓점이 없어요! 0개예요.',
+          difficulty: 4,
+        ),
+      ],
+    ),
+  ],
+);
+
+// ── Level 3: 더하기 ──────────────────────────────────────────────────────────
+
+final _level3Step = LearningStep(
+  stepId: 'math_level_3_step_1',
+  stepTitle: '더하기',
+  stepDescription: '합치면 몇 개가 될까요?',
+  cycles: [
+    LearningCycle(
+      cycleId: 'math_l3_c1',
+      type: CycleType.concept,
+      slides: const [
+        ConceptSlide(
+          image: '🍎🍊',
+          text: '물건을 합치면 개수가 늘어나요.\n이렇게 합치는 것을 더하기라고 해요!',
+          confirmButtonText: '다음',
+        ),
+        ConceptSlide(
+          image: '➕',
+          text: '더하기는 + 기호로 나타내요.\n2 + 3 = 5 이렇게 쓰면 돼요!',
+          confirmButtonText: '다음',
+        ),
+        ConceptSlide(
+          image: '🤲',
+          text: '사과 2개와 귤 3개를 합치면\n모두 몇 개일까요? 함께 세어봐요!',
+          confirmButtonText: '이해했어요!',
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l3_c2',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '1 + 1 = ?',
+          options: ['1', '2', '3'],
+          answer: '2',
+          hints: ['사탕 1개에 1개를 더해봐요', '손가락 1개, 1개를 더 펴봐요', '정답은 2이에요'],
+          explanation: '1+1=2예요!',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '2 + 2 = ?',
+          options: ['3', '4', '5'],
+          answer: '4',
+          hints: ['손가락 2개, 2개를 더 펴봐요', '2개씩 두 번이에요', '정답은 4이에요'],
+          explanation: '2+2=4예요!',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '3 + 2 = ?',
+          options: ['4', '5', '6'],
+          answer: '5',
+          hints: ['손가락 3개를 펴고, 2개를 더 펴봐요', '3부터 세면서 2개 더 세어봐요', '정답은 5이에요'],
+          explanation: '3+2=5예요!',
+          difficulty: 2,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l3_c3',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '🍪🍪 쿠키 2개에\n🍪🍪🍪 쿠키 3개를\n더하면 몇 개인가요?',
+          options: ['4', '5', '6'],
+          answer: '5',
+          hints: ['쿠키를 모두 모아서 세어봐요', '2개에 3개를 합치면?', '정답은 5이에요'],
+          explanation: '2+3=5, 쿠키가 5개예요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '4 + 1 = ?',
+          options: ['4', '5', '6'],
+          answer: '5',
+          hints: ['4에서 1개만 더 세어봐요', '4 다음 수는 무엇인가요?', '정답은 5이에요'],
+          explanation: '4+1=5예요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '3 + 4 = ?',
+          options: ['6', '7', '8'],
+          answer: '7',
+          hints: ['손가락 3개, 4개를 펴봐요', '3부터 시작해서 4번 더 세어봐요', '정답은 7이에요'],
+          explanation: '3+4=7예요!',
+          difficulty: 3,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l3_c4',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '5 + 3 = ?',
+          options: ['7', '8', '9'],
+          answer: '8',
+          hints: ['5에서 3번 더 세어봐요', '5, 6, 7, 8!', '정답은 8이에요'],
+          explanation: '5+3=8예요!',
+          difficulty: 3,
+        ),
+        ChoiceQuestion(
+          questionText: '6 + 2 = ?',
+          options: ['7', '8', '9'],
+          answer: '8',
+          hints: ['6에서 2번 더 세어봐요', '6, 7, 8!', '정답은 8이에요'],
+          explanation: '6+2=8예요!',
+          difficulty: 3,
+        ),
+        ChoiceQuestion(
+          questionText: '4 + 4 = ?',
+          options: ['7', '8', '9'],
+          answer: '8',
+          hints: ['손가락 4개, 4개를 펴봐요', '4씩 두 번이에요', '정답은 8이에요'],
+          explanation: '4+4=8예요!',
+          difficulty: 3,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l3_c5',
+      type: CycleType.shortAnswer,
+      shortAnswerQuestions: const [
+        ShortAnswerQuestion(
+          questionText: '🍓🍓 딸기 2개에\n🍓🍓🍓 딸기 3개를\n더하면 몇 개인가요?',
+          answer: '5',
+          hints: ['딸기를 모두 세어봐요', '2개 더하기 3개예요', '정답은 5이에요'],
+          explanation: '2+3=5, 딸기 5개예요!',
+          difficulty: 4,
+        ),
+        ShortAnswerQuestion(
+          questionText: '3 + 5 = ?',
+          answer: '8',
+          hints: ['3에서 5번 더 세어봐요', '3, 4, 5, 6, 7, 8!', '정답은 8이에요'],
+          explanation: '3+5=8이에요!',
+          difficulty: 4,
+        ),
+        ShortAnswerQuestion(
+          questionText: '🐥🐥🐥🐥 병아리 4마리에\n🐥🐥🐥🐥🐥🐥 병아리 6마리를\n더하면 몇 마리인가요?',
+          answer: '10',
+          hints: ['병아리를 모두 세어봐요', '4더하기 6이에요', '정답은 10이에요'],
+          explanation: '4+6=10, 병아리 10마리예요!',
+          difficulty: 4,
+        ),
+      ],
+    ),
+  ],
+);
+
+// ── Level 4: 빼기 ────────────────────────────────────────────────────────────
+
+final _level4Step = LearningStep(
+  stepId: 'math_level_4_step_1',
+  stepTitle: '빼기',
+  stepDescription: '빼면 몇 개가 남을까요?',
+  cycles: [
+    LearningCycle(
+      cycleId: 'math_l4_c1',
+      type: CycleType.concept,
+      slides: const [
+        ConceptSlide(
+          image: '🎈',
+          text: '물건이 사라지면 개수가 줄어요.\n이렇게 빼는 것을 빼기라고 해요!',
+          confirmButtonText: '다음',
+        ),
+        ConceptSlide(
+          image: '➖',
+          text: '빼기는 – 기호로 나타내요.\n5 – 2 = 3 이렇게 쓰면 돼요!',
+          confirmButtonText: '다음',
+        ),
+        ConceptSlide(
+          image: '🍪',
+          text: '쿠키 5개 중 2개를 먹었어요.\n남은 쿠키는 몇 개일까요?',
+          confirmButtonText: '이해했어요!',
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l4_c2',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '3 – 1 = ?',
+          options: ['1', '2', '3'],
+          answer: '2',
+          hints: ['3개에서 1개를 지워봐요', '3보다 1 작은 수는?', '정답은 2이에요'],
+          explanation: '3-1=2예요!',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '5 – 2 = ?',
+          options: ['2', '3', '4'],
+          answer: '3',
+          hints: ['손가락 5개에서 2개를 접어봐요', '5, 4, 3 — 2번 뺐어요', '정답은 3이에요'],
+          explanation: '5-2=3예요!',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '4 – 4 = ?',
+          options: ['0', '1', '2'],
+          answer: '0',
+          hints: ['4개에서 4개를 모두 빼면?', '다 없어졌어요!', '정답은 0이에요'],
+          explanation: '4-4=0, 하나도 안 남아요!',
+          difficulty: 2,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l4_c3',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '🍎🍎🍎🍎🍎 사과 5개 중\n2개를 먹었어요.\n몇 개 남았나요?',
+          options: ['2', '3', '4'],
+          answer: '3',
+          hints: ['사과에서 2개를 지워봐요', '5에서 2를 빼봐요', '정답은 3이에요'],
+          explanation: '5-2=3, 사과 3개 남아요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '7 – 3 = ?',
+          options: ['3', '4', '5'],
+          answer: '4',
+          hints: ['7에서 3번 거꾸로 세어봐요', '7, 6, 5, 4!', '정답은 4이에요'],
+          explanation: '7-3=4예요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '6 – 4 = ?',
+          options: ['1', '2', '3'],
+          answer: '2',
+          hints: ['6에서 4번 거꾸로 세어봐요', '6, 5, 4, 3, 2!', '정답은 2이에요'],
+          explanation: '6-4=2예요!',
+          difficulty: 2,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l4_c4',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '8 – 5 = ?',
+          options: ['2', '3', '4'],
+          answer: '3',
+          hints: ['8에서 5번 거꾸로 세어봐요', '8, 7, 6, 5, 4, 3!', '정답은 3이에요'],
+          explanation: '8-5=3이에요!',
+          difficulty: 3,
+        ),
+        ChoiceQuestion(
+          questionText: '10 – 3 = ?',
+          options: ['6', '7', '8'],
+          answer: '7',
+          hints: ['10에서 3번 거꾸로 세어봐요', '10, 9, 8, 7!', '정답은 7이에요'],
+          explanation: '10-3=7이에요!',
+          difficulty: 3,
+        ),
+        ChoiceQuestion(
+          questionText: '9 – 6 = ?',
+          options: ['2', '3', '4'],
+          answer: '3',
+          hints: ['9에서 6번 거꾸로 세어봐요', '9, 8, 7, 6, 5, 4, 3!', '정답은 3이에요'],
+          explanation: '9-6=3이에요!',
+          difficulty: 3,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l4_c5',
+      type: CycleType.shortAnswer,
+      shortAnswerQuestions: const [
+        ShortAnswerQuestion(
+          questionText: '🌟🌟🌟🌟🌟🌟 별 6개 중\n4개가 사라졌어요.\n몇 개 남았나요?',
+          answer: '2',
+          hints: ['별에서 4개를 지워봐요', '6-4를 계산해봐요', '정답은 2이에요'],
+          explanation: '6-4=2, 별 2개 남아요!',
+          difficulty: 4,
+        ),
+        ShortAnswerQuestion(
+          questionText: '8 – 3 = ?',
+          answer: '5',
+          hints: ['8에서 3번 거꾸로 세어봐요', '8, 7, 6, 5!', '정답은 5이에요'],
+          explanation: '8-3=5이에요!',
+          difficulty: 4,
+        ),
+        ShortAnswerQuestion(
+          questionText: '🍦🍦🍦🍦🍦🍦🍦 아이스크림\n7개 중 5개를 먹었어요.\n몇 개 남았나요?',
+          answer: '2',
+          hints: ['7개에서 5개를 지워봐요', '7-5를 계산해봐요', '정답은 2이에요'],
+          explanation: '7-5=2, 아이스크림 2개 남아요!',
+          difficulty: 4,
+        ),
+      ],
+    ),
+  ],
+);
+
+// ── Level 5: 크기 비교 ───────────────────────────────────────────────────────
+
+final _level5Step = LearningStep(
+  stepId: 'math_level_5_step_1',
+  stepTitle: '크기 비교',
+  stepDescription: '어느 쪽이 더 클까요?',
+  cycles: [
+    LearningCycle(
+      cycleId: 'math_l5_c1',
+      type: CycleType.concept,
+      slides: const [
+        ConceptSlide(
+          image: '⚖️',
+          text: '두 수 중 어느 쪽이 더 큰지,\n작은지 알아보는 거예요!',
+          confirmButtonText: '다음',
+        ),
+        ConceptSlide(
+          image: '↔️',
+          text: '> 는 왼쪽이 크다, < 는 오른쪽이 커요.\n3 > 1, 2 < 5 이렇게 써요!',
+          confirmButtonText: '다음',
+        ),
+        ConceptSlide(
+          image: '🏆',
+          text: '7과 4 중 어느 게 더 클까요?\n손가락으로 세어 비교해봐요!',
+          confirmButtonText: '이해했어요!',
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l5_c2',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '3과 5 중에서\n더 큰 수는?',
+          options: ['3', '5', '같아요'],
+          answer: '5',
+          hints: ['손가락으로 3개, 5개를 세어봐요', '5개가 3개보다 많아요', '정답은 5이에요'],
+          explanation: '5가 3보다 커요!',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '7과 4 중에서\n더 작은 수는?',
+          options: ['7', '4', '같아요'],
+          answer: '4',
+          hints: ['손가락으로 7개, 4개를 세어봐요', '4개가 7개보다 적어요', '정답은 4이에요'],
+          explanation: '4가 7보다 작아요!',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '2 ○ 8\n○ 안에 들어갈 기호는?',
+          options: ['>', '<', '='],
+          answer: '<',
+          hints: ['2와 8을 비교해봐요', '2가 더 작아요', '작은 쪽은 < 기호를 써요'],
+          explanation: '2 < 8, 2가 8보다 작아요!',
+          difficulty: 2,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l5_c3',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '1, 5, 3 중에서\n가장 큰 수는?',
+          options: ['1', '5', '3'],
+          answer: '5',
+          hints: ['세 수를 순서대로 나열해봐요', '1 < 3 < 5이에요', '정답은 5이에요'],
+          explanation: '5가 가장 큰 수예요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '6 ○ 6\n○ 안에 들어갈 기호는?',
+          options: ['>', '<', '='],
+          answer: '=',
+          hints: ['6과 6을 비교해봐요', '같은 숫자예요', '같을 때는 = 기호를 써요'],
+          explanation: '6 = 6, 두 수가 같아요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '9와 7 중에서\n더 큰 수는?',
+          options: ['9', '7', '같아요'],
+          answer: '9',
+          hints: ['9개와 7개를 세어봐요', '9개가 7개보다 많아요', '정답은 9이에요'],
+          explanation: '9가 7보다 커요!',
+          difficulty: 2,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l5_c4',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '2, 8, 5 중에서\n가장 작은 수는?',
+          options: ['2', '8', '5'],
+          answer: '2',
+          hints: ['세 수를 순서대로 나열해봐요', '2 < 5 < 8이에요', '정답은 2이에요'],
+          explanation: '2가 가장 작은 수예요!',
+          difficulty: 3,
+        ),
+        ChoiceQuestion(
+          questionText: '4 + 2 ○ 5\n○ 안에 들어갈 기호는?',
+          options: ['>', '<', '='],
+          answer: '>',
+          hints: ['4+2를 먼저 계산해봐요', '4+2=6이에요', '6과 5를 비교하면?'],
+          explanation: '4+2=6이고, 6>5이에요!',
+          difficulty: 3,
+        ),
+        ChoiceQuestion(
+          questionText: '10 – 3 ○ 6\n○ 안에 들어갈 기호는?',
+          options: ['>', '<', '='],
+          answer: '>',
+          hints: ['10-3을 먼저 계산해봐요', '10-3=7이에요', '7과 6을 비교하면?'],
+          explanation: '10-3=7이고, 7>6이에요!',
+          difficulty: 3,
+        ),
+      ],
+    ),
+    LearningCycle(
+      cycleId: 'math_l5_c5',
+      type: CycleType.shortAnswer,
+      shortAnswerQuestions: const [
+        ShortAnswerQuestion(
+          questionText: '3, 7, 5 중에서\n가장 큰 수는?',
+          answer: '7',
+          hints: ['세 수를 순서대로 나열해봐요', '3 < 5 < 7이에요', '정답은 7이에요'],
+          explanation: '7이 가장 큰 수예요!',
+          difficulty: 4,
+        ),
+        ShortAnswerQuestion(
+          questionText: '1, 4, 9, 2 중에서\n가장 작은 수는?',
+          answer: '1',
+          hints: ['네 수를 순서대로 나열해봐요', '1 < 2 < 4 < 9이에요', '정답은 1이에요'],
+          explanation: '1이 가장 작은 수예요!',
+          difficulty: 4,
+        ),
+        ShortAnswerQuestion(
+          questionText: '5보다 크고\n8보다 작은 수를\n모두 더하면?',
+          answer: '13',
+          hints: ['5보다 크고 8보다 작은 수를 찾아봐요', '6과 7이 해당돼요', '6+7=13이에요'],
+          explanation: '6과 7이 해당되고, 6+7=13이에요!',
+          difficulty: 4,
+        ),
+      ],
+    ),
+  ],
+);

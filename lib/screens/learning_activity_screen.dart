@@ -1,87 +1,132 @@
 import 'package:flutter/material.dart';
+import '../models/learning_model.dart';
 import '../widgets/learning_roadmap.dart' show LevelData;
 import '../theme/app_colors.dart';
 
 class LearningActivityScreen extends StatefulWidget {
   final LevelData levelData;
+  final int initialStep;
+  final VoidCallback? onStepCompleted;
 
-  const LearningActivityScreen({super.key, required this.levelData});
+  const LearningActivityScreen({
+    super.key,
+    required this.levelData,
+    this.initialStep = 1,
+    this.onStepCompleted,
+  });
 
   @override
   State<LearningActivityScreen> createState() => _LearningActivityScreenState();
 }
 
 class _LearningActivityScreenState extends State<LearningActivityScreen> {
-  int _currentStep = 1;
-  final int _totalSteps = 5;
+  late LearningStep _step;
+  late int _currentCycleIdx;
+  int _currentQuestionIdx = 0;
+  int _hintsShown = 0;
+  String? _selectedChoice;
+  bool _showWrongFeedback = false;
   bool _showSuccessOverlay = false;
-
-  // --- (Learning) Interaction States ---
-  // Step 2
-  final List<String> _sentenceOptions = ['사과를', '좋아해요', '나는'];
-  final List<String> _selectedSentence = [];
-
-  // Step 3
-  String? _selectedParticle;
-
-  // Step 4
-  bool _isRecording = false;
-  bool _hasReadVoice = false;
-
-  // Step 5
-  late TextEditingController _countController;
+  late TextEditingController _answerController;
 
   @override
   void initState() {
     super.initState();
-    _countController = TextEditingController();
-    _countController.addListener(() {
-      setState(() {});
-    });
+    _step = mockStepForLevel(widget.levelData.level);
+    _currentCycleIdx = (widget.initialStep - 1).clamp(
+      0,
+      _step.cycles.length - 1,
+    );
+    _answerController = TextEditingController();
+    _answerController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _countController.dispose();
+    _answerController.dispose();
     super.dispose();
   }
 
-  // mock data
-  bool get _isStepComplete {
-    switch (_currentStep) {
-      case 1:
+  LearningCycle get _currentCycle => _step.cycles[_currentCycleIdx];
+  int get _totalCycles => _step.cycles.length;
+  bool get _isLastCycle => _currentCycleIdx >= _totalCycles - 1;
+  bool get _isLastQuestion =>
+      _currentQuestionIdx >= _currentCycle.questionCount - 1;
+
+  bool get _isCurrentAnswerCorrect {
+    switch (_currentCycle.type) {
+      case CycleType.concept:
         return true;
-      case 2:
-        return _selectedSentence.join(' ') == '나는 사과를 좋아해요';
-      case 3:
-        return _selectedParticle == '가';
-      case 4:
-        return _hasReadVoice;
-      case 5:
-        return _countController.text.trim() == '3';
-      default:
-        return false;
+      case CycleType.choice:
+        final q = _currentCycle.choiceQuestions![_currentQuestionIdx];
+        return _selectedChoice == q.answer;
+      case CycleType.shortAnswer:
+        final q = _currentCycle.shortAnswerQuestions![_currentQuestionIdx];
+        return _answerController.text.trim() == q.answer;
     }
   }
 
-  void _nextStep() {
-    if (!_isStepComplete) return;
+  bool get _canProceed {
+    switch (_currentCycle.type) {
+      case CycleType.concept:
+        return true;
+      case CycleType.choice:
+        return _selectedChoice != null && _isCurrentAnswerCorrect;
+      case CycleType.shortAnswer:
+        return _answerController.text.trim().isNotEmpty &&
+            _isCurrentAnswerCorrect;
+    }
+  }
 
-    if (_currentStep < _totalSteps) {
-      FocusScope.of(context).unfocus();
-      setState(() {
-        _showSuccessOverlay = true;
-      });
+  void _resetQuestionState() {
+    _selectedChoice = null;
+    _hintsShown = 0;
+    _showWrongFeedback = false;
+    _answerController.clear();
+  }
 
-      Future.delayed(const Duration(milliseconds: 1500), () {
+  void _onChoiceTap(String option) {
+    if (_showWrongFeedback) return;
+    setState(() => _selectedChoice = option);
+
+    final q = _currentCycle.choiceQuestions![_currentQuestionIdx];
+    if (option != q.answer) {
+      setState(() => _showWrongFeedback = true);
+      Future.delayed(const Duration(milliseconds: 700), () {
         if (mounted) {
           setState(() {
+            _showWrongFeedback = false;
+            _selectedChoice = null;
+          });
+        }
+      });
+    }
+  }
+
+  void _onConfirm() {
+    if (!_canProceed) return;
+    FocusScope.of(context).unfocus();
+
+    if (!_isLastQuestion) {
+      setState(() {
+        _currentQuestionIdx++;
+        _resetQuestionState();
+      });
+    } else if (!_isLastCycle) {
+      setState(() => _showSuccessOverlay = true);
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          widget.onStepCompleted?.call();
+          setState(() {
             _showSuccessOverlay = false;
-            _currentStep++;
+            _currentCycleIdx++;
+            _currentQuestionIdx = 0;
+            _resetQuestionState();
           });
         }
       });
     } else {
+      widget.onStepCompleted?.call();
       _showRewardDialog();
     }
   }
@@ -90,159 +135,155 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(32),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 16,
-                        spreadRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text('🌿', style: TextStyle(fontSize: 40)),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  '풀 획득!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textMain,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '경험치 +10',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSub,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      '계속하기',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(32),
           ),
-        );
-      },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Text('🌿', style: TextStyle(fontSize: 40)),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                '풀 획득!',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMain,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '경험치 +10',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSub,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    '계속하기',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
               children: [
                 _buildTopBar(),
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
-                    child: _buildCurrentContent(key: ValueKey(_currentStep)),
+                    child: _buildCycleContent(
+                      key: ValueKey('${_currentCycleIdx}_$_currentQuestionIdx'),
+                    ),
                   ),
                 ),
                 _buildBottomBar(),
               ],
             ),
-
-            if (_showSuccessOverlay)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.primary,
-                              width: 4,
+          ),
+          if (_showSuccessOverlay)
+            Positioned.fill(
+              child: Container(
+                color: Colors.white.withValues(alpha: 0.9),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.primary,
+                            width: 4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.2),
+                              blurRadius: 20,
+                              spreadRadius: 10,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF75A66B,
-                                ).withValues(alpha: 0.2),
-                                blurRadius: 20,
-                                spreadRadius: 10,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.check,
-                            color: AppColors.primary,
-                            size: 60,
-                          ),
+                          ],
                         ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          '와! 정말 잘했어! 🎉',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primary,
-                          ),
+                        child: const Icon(
+                          Icons.check,
+                          color: AppColors.primary,
+                          size: 60,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        '와! 정말 잘했어! 🎉',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -269,25 +310,24 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                   ),
                 ),
                 LayoutBuilder(
-                  builder: (context, constraints) {
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      height: 10,
-                      width:
-                          constraints.maxWidth * (_currentStep / _totalSteps),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    );
-                  },
+                  builder: (context, constraints) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    height: 10,
+                    width:
+                        constraints.maxWidth *
+                        ((_currentCycleIdx + 1) / _totalCycles),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 16),
           Text(
-            '$_currentStep/$_totalSteps',
+            '${_currentCycleIdx + 1}/$_totalCycles',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -300,492 +340,417 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
     );
   }
 
-  Widget _buildCurrentContent({required Key key}) {
-    switch (_currentStep) {
-      case 1:
-        return _buildStep1Observe(key: key);
-      case 2:
-        return _buildStep2Sentence(key: key);
-      case 3:
-        return _buildStep3Select(key: key);
-      case 4:
-        return _buildStep4Read(key: key);
-      case 5:
-        return _buildStep5Count(key: key);
-      default:
-        return const SizedBox();
+  Widget _buildCycleContent({required Key key}) {
+    switch (_currentCycle.type) {
+      case CycleType.concept:
+        return _buildConceptSlide(key: key);
+      case CycleType.choice:
+        return _buildChoiceQuestion(key: key);
+      case CycleType.shortAnswer:
+        return _buildShortAnswerQuestion(key: key);
     }
   }
 
-  Widget _buildStepContainer({
-    required Key key,
-    required String title,
-    required Widget child,
-  }) {
+  // ── Concept slide ─────────────────────────────────────────────────────────
+
+  Widget _buildConceptSlide({required Key key}) {
+    final slide = _currentCycle.slides![_currentQuestionIdx];
+
     return SingleChildScrollView(
       key: key,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
       physics: const BouncingScrollPhysics(),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 20),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textMain,
-              height: 1.4,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F8ED),
+              borderRadius: BorderRadius.circular(20),
             ),
-            textAlign: TextAlign.center,
+            child: const Text(
+              '개념 이야기',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
+            ),
           ),
-          const SizedBox(height: 40),
-          child,
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 44),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F8ED),
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Center(
+              child: Text(slide.image, style: const TextStyle(fontSize: 72)),
+            ),
+          ),
+          const SizedBox(height: 28),
+          Text(
+            slide.text,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMain,
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildQuestionDots(),
         ],
       ),
     );
   }
 
-  // Step 1: 단어 구성 보기
-  Widget _buildStep1Observe({required Key key}) {
-    return _buildStepContainer(
+  // ── Choice question ───────────────────────────────────────────────────────
+
+  Widget _buildChoiceQuestion({required Key key}) {
+    final q = _currentCycle.choiceQuestions![_currentQuestionIdx];
+
+    return SingleChildScrollView(
       key: key,
-      title: '단어를 살펴봐요',
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+      physics: const BouncingScrollPhysics(),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildQuestionLabel('문제 풀기'),
+          const SizedBox(height: 20),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 40),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.borderLight, width: 1),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: const Center(
-              child: Text('🍎', style: TextStyle(fontSize: 80)),
+            child: Text(
+              q.questionText,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMain,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(height: 30),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.center,
-            children: [
-              _buildTag('사과'),
-              _buildTag('빨간색'),
-              _buildTag('맛있는'),
-              _buildTag('과일'),
-            ],
+          const SizedBox(height: 24),
+          Column(
+            children: q.options
+                .map((opt) => _buildChoiceOption(opt, q.answer))
+                .toList(),
           ),
+          const SizedBox(height: 16),
+          _buildHintPanel(q.hints),
+          const SizedBox(height: 8),
+          _buildQuestionDots(),
         ],
       ),
     );
   }
 
-  Widget _buildTag(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFDCD5CA), width: 1),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textSub,
-        ),
-      ),
-    );
-  }
+  Widget _buildChoiceOption(String option, String correctAnswer) {
+    final isSelected = _selectedChoice == option;
+    final isCorrect = option == correctAnswer;
+    final showWrong = isSelected && _showWrongFeedback;
+    final showCorrect = isSelected && isCorrect && !_showWrongFeedback;
 
-  // Step 2: 문장 만들기
-  Widget _buildStep2Sentence({required Key key}) {
-    return _buildStepContainer(
-      key: key,
-      title: '문장을 만들어봐요',
-      child: Column(
-        children: [
-          // Target box
-          Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 120),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFFDF5),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: const Color(0xFFF3C74B),
-                width: 2,
-                style: BorderStyle.solid,
-              ),
-            ),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                if (_selectedSentence.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text(
-                      '아래 단어를 순서대로 탭하세요',
-                      style: TextStyle(color: AppColors.textSub, fontSize: 14),
-                    ),
-                  ),
-                for (final word in _selectedSentence)
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedSentence.remove(word);
-                      });
-                    },
-                    child: _buildSentenceChip(word, isLight: false),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 40),
+    Color borderColor = const Color(0xFFDCD5CA);
+    Color bgColor = Colors.white;
+    Color textColor = AppColors.textMain;
 
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.center,
-            children: [
-              for (final word in _sentenceOptions)
-                GestureDetector(
-                  onTap: _selectedSentence.contains(word)
-                      ? null
-                      : () {
-                          setState(() {
-                            _selectedSentence.add(word);
-                          });
-                        },
-                  child: Opacity(
-                    opacity: _selectedSentence.contains(word) ? 0.3 : 1.0,
-                    child: _buildSentenceChip(word, isLight: true),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSentenceChip(String text, {required bool isLight}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isLight ? Colors.white : const Color(0xFFF9F7F3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isLight ? const Color(0xFFDCD5CA) : AppColors.borderLight,
-          width: 1,
-        ),
-        boxShadow: isLight
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          color: isLight ? AppColors.textMain : AppColors.primary,
-        ),
-      ),
-    );
-  }
-
-  // Step 3: 알맞은 단어(조사) 고르기
-  Widget _buildStep3Select({required Key key}) {
-    return _buildStepContainer(
-      key: key,
-      title: '알맞은 단어를 골라봐요',
-      child: Column(
-        children: [
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              const Text(
-                '사과',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textMain,
-                ),
-              ),
-              Container(
-                width: 60,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: _selectedParticle != null
-                      ? const Color(0xFFE4F1DF)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _selectedParticle != null
-                        ? AppColors.primary
-                        : const Color(0xFFDCD5CA),
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    _selectedParticle ?? '',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ),
-              const Text(
-                '맛있어요',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textMain,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 60),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildSelectionButton('가'),
-              const SizedBox(width: 16),
-              _buildSelectionButton('를'),
-              const SizedBox(width: 16),
-              _buildSelectionButton('은'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSelectionButton(String text) {
-    final bool isSelected = _selectedParticle == text;
+    if (showCorrect) {
+      borderColor = AppColors.primary;
+      bgColor = const Color(0xFFF0F8ED);
+      textColor = AppColors.primary;
+    } else if (showWrong) {
+      borderColor = const Color(0xFFE57373);
+      bgColor = const Color(0xFFFFF3F3);
+      textColor = const Color(0xFFE57373);
+    }
 
     return GestureDetector(
-      onTap: () {
-        setState(() => _selectedParticle = text);
-      },
+      onTap: () => _onChoiceTap(option),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 64,
-        height: 64,
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.only(bottom: 12),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.primary
-                : const Color(0xFFDCD5CA),
-            width: isSelected ? 2 : 1,
-          ),
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
+                    color:
+                        (showCorrect
+                                ? AppColors.primary
+                                : const Color(0xFFE57373))
+                            .withValues(alpha: 0.15),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
                 ]
               : null,
         ),
-        child: Center(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: isSelected ? Colors.white : AppColors.textMain,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                option,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
             ),
-          ),
+            if (showCorrect)
+              const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.primary,
+                size: 22,
+              ),
+            if (showWrong)
+              const Icon(
+                Icons.cancel_rounded,
+                color: Color(0xFFE57373),
+                size: 22,
+              ),
+          ],
         ),
       ),
     );
   }
 
-  // Step 4: 문장 말해보기 (STT 미구현)
-  Widget _buildStep4Read({required Key key}) {
-    return _buildStepContainer(
+  // ── Short answer question ─────────────────────────────────────────────────
+
+  Widget _buildShortAnswerQuestion({required Key key}) {
+    final q = _currentCycle.shortAnswerQuestions![_currentQuestionIdx];
+
+    return SingleChildScrollView(
       key: key,
-      title: '큰 소리로 읽어봐요',
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+      physics: const BouncingScrollPhysics(),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildQuestionLabel('직접 써보기'),
+          const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF1EB),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFFFDCC8), width: 1),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: const Text(
-              '나는 빨간 사과를 좋아해요',
-              style: TextStyle(
-                fontSize: 22,
+            child: Text(
+              q.questionText,
+              style: const TextStyle(
+                fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFFF07D4F),
+                color: AppColors.textMain,
+                height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(height: 60),
-          GestureDetector(
-            onLongPressStart: (_) {
-              setState(() => _isRecording = true);
-            },
-            onLongPressEnd: (_) {
-              setState(() {
-                _isRecording = false;
-                _hasReadVoice = true;
-              });
-            },
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('마이크 버튼을 꾹 누르고 말해보세요!')),
-              );
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: _isRecording ? 90 : 80,
-              height: _isRecording ? 90 : 80,
-              decoration: BoxDecoration(
-                color: _hasReadVoice
-                    ? AppColors.textMain
-                    : AppColors.primary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  if (_isRecording)
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.5),
-                      blurRadius: 20,
-                      spreadRadius: 10,
-                    )
-                  else
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      spreadRadius: 4,
+          const SizedBox(height: 32),
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 100,
+                  child: TextField(
+                    controller: _answerController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textMain,
                     ),
-                ],
-              ),
-              child: Icon(
-                _hasReadVoice ? Icons.check : Icons.mic,
-                color: Colors.white,
-                size: 40,
-              ),
+                    decoration: InputDecoration(
+                      hintText: '?',
+                      hintStyle: const TextStyle(color: Color(0xFFDCD5CA)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFDCD5CA),
+                          width: 1,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: _isCurrentAnswerCorrect
+                              ? AppColors.primary
+                              : const Color(0xFFF3C74B),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  '개',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textMain,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
-          Text(
-            _hasReadVoice ? '정말 잘 읽었어요!' : '마이크를 길게 누르고 읽어보세요',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: _hasReadVoice
-                  ? AppColors.primary
-                  : AppColors.textSub,
-            ),
-          ),
+          const SizedBox(height: 24),
+          _buildHintPanel(q.hints),
+          const SizedBox(height: 8),
+          _buildQuestionDots(),
         ],
       ),
     );
   }
 
-  // Step 5: 개수 세어보기
-  Widget _buildStep5Count({required Key key}) {
-    return _buildStepContainer(
-      key: key,
-      title: '사과가 몇 개 있나요?',
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFFDF5),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFF3C74B), width: 1),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('🍎', style: TextStyle(fontSize: 48)),
-                SizedBox(width: 10),
-                Text('🍎', style: TextStyle(fontSize: 48)),
-                SizedBox(width: 10),
-                Text('🍎', style: TextStyle(fontSize: 48)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 40),
-          SizedBox(
-            width: 120,
-            child: TextField(
-              controller: _countController,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textMain,
-              ),
-              decoration: InputDecoration(
-                hintText: '?',
-                hintStyle: const TextStyle(color: Color(0xFFDCD5CA)),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFDCD5CA),
-                    width: 1,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFF3C74B),
-                    width: 2,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+  // ── Shared helpers ────────────────────────────────────────────────────────
+
+  Widget _buildQuestionLabel(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F8ED),
+        borderRadius: BorderRadius.circular(20),
       ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuestionDots() {
+    final count = _currentCycle.questionCount;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(count, (i) {
+          final isActive = i == _currentQuestionIdx;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: isActive ? 20 : 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: isActive ? AppColors.primary : const Color(0xFFDCD5CA),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildHintPanel(List<String> hints) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_hintsShown < hints.length)
+          GestureDetector(
+            onTap: () => setState(() => _hintsShown++),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E7),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF3C74B), width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('💡', style: TextStyle(fontSize: 16)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '힌트 보기 (${hints.length - _hintsShown}개 남음)',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFA07000),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        for (int i = 0; i < _hintsShown; i++)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '힌트 ${i + 1}: ${hints[i]}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFA07000),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
   Widget _buildBottomBar() {
-    final bool canProceed = _isStepComplete;
+    final isLastOverall = _isLastCycle && _isLastQuestion;
+    final isConceptLast =
+        _currentCycle.type == CycleType.concept && _isLastQuestion;
+
+    final String label;
+    if (isLastOverall) {
+      label = '마치기';
+    } else if (isConceptLast) {
+      label = '이해했어요!';
+    } else if (_currentCycle.type == CycleType.concept) {
+      label = '다음';
+    } else {
+      label = _isLastQuestion ? '확인' : '확인';
+    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -794,20 +759,25 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
         width: double.infinity,
         height: 60,
         child: ElevatedButton(
-          onPressed: (_showSuccessOverlay || !canProceed) ? null : _nextStep,
+          onPressed: (_showSuccessOverlay || !_canProceed) ? null : _onConfirm,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
+            disabledBackgroundColor: AppColors.primaryDisabled,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
             elevation: 0,
           ),
-          child: Text(
-            _currentStep < _totalSteps ? '확인' : '마치기',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Text(
+              label,
+              key: ValueKey(label),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
