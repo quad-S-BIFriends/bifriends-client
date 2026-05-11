@@ -8,4 +8,5 @@ class AppColors {
   static const Color textSub = Color(0xFF8A7E74);
   static const Color borderLight = Color(0xFFF0EBE1);
   static const Color cardLight = Color(0xFFF9F6F0);
+  static const Color hint = Color(0xFFFFD952);
 }

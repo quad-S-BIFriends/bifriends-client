@@ -683,32 +683,27 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
   Widget _buildHintPanel(List<String> hints) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_hintsShown < hints.length)
-          GestureDetector(
-            onTap: () => setState(() => _hintsShown++),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF8E7),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFF3C74B), width: 1),
+          SizedBox(
+            height: 60,
+            child: ElevatedButton(
+              onPressed: () => setState(() => _hintsShown++),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.hint,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                elevation: 0,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('💡', style: TextStyle(fontSize: 16)),
-                  const SizedBox(width: 6),
-                  Text(
-                    '힌트 보기 (${hints.length - _hintsShown}개 남음)',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFA07000),
-                    ),
-                  ),
-                ],
+              child: Text(
+                '💡 힌트 보기 (${hints.length - _hintsShown}개 남음)',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMain,
+                ),
               ),
             ),
           ),
