@@ -23,18 +23,17 @@ class _StoryLoadingScreenState extends State<StoryLoadingScreen>
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
 
-    _bounceAnim = Tween<double>(begin: 0, end: -12).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _bounceAnim = Tween<double>(
+      begin: 0,
+      end: -12,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     // TODO: BE 연동 시 실제 로딩 완료 시점으로 교체
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => const FriendsActivityScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const FriendsActivityScreen()),
         );
       }
     });

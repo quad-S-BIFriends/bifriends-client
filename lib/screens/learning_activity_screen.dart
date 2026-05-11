@@ -149,6 +149,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -788,25 +789,14 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: AppColors.borderLight, width: 1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
+      color: AppColors.background,
       child: SizedBox(
         width: double.infinity,
         height: 60,
         child: ElevatedButton(
           onPressed: (_showSuccessOverlay || !canProceed) ? null : _nextStep,
           style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
