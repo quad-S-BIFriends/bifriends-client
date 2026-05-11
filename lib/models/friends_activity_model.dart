@@ -77,7 +77,6 @@ class FriendsStep2Data {
 
 // ─── Step 3 ─── EMO-12 to EMO-17
 // 3컷 만화 캐러셀 -> 감정 원인 맞추기 퀴즈
-
 // 만화 컷 (상황 시작 -> 문제 발생 -> 감정 발생)
 class ComicPanel {
   final String? imageUrl; // TODO: BE 연동
@@ -143,9 +142,9 @@ class FriendsStep3Data {
 
 class Step4Scene {
   final String scenarioText; // (EMO-18 요약)
-  final String speakerLabel; 
-  final String speakerFullLabel; 
-  final String speakerMessage; // 발화 내용
+  final String speakerLabel;
+  final String speakerFullLabel;
+  final String speakerMessage;
 
   const Step4Scene({
     required this.scenarioText,
@@ -217,7 +216,7 @@ class FriendsStep4Data {
 
 class FriendsStep5Data {
   final String leoMessage;
-  final String promptLabel; 
+  final String promptLabel;
   final List<String> farewellOptions;
 
   const FriendsStep5Data({
@@ -230,8 +229,9 @@ class FriendsStep5Data {
     return FriendsStep5Data(
       leoMessage: json['leoMessage'] as String,
       promptLabel: json['promptLabel'] as String,
-      farewellOptions:
-          (json['farewellOptions'] as List).map((e) => e as String).toList(),
+      farewellOptions: (json['farewellOptions'] as List)
+          .map((e) => e as String)
+          .toList(),
     );
   }
 }

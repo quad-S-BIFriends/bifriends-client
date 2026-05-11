@@ -106,10 +106,12 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
   late final PageController _step3PageController;
   int _step3Panel = 0;
   int _step3SelectedIndex = -1;
+  bool _step3Evaluated = false;
   bool _step3IsCorrect = false;
 
   // Step 4 state
   int _step4SelectedIndex = -1;
+  bool _step4Evaluated = false;
   bool _step4IsCorrect = false;
 
   // Step 5 state
@@ -923,20 +925,23 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
             _buildStep3Choice(data, i),
             if (i < data.options.length - 1) const SizedBox(height: 10),
           ],
-          // 오답 안내 (EMO-16): 장면을 다시 보도록 짧게 안내
-          if (_step3SelectedIndex != -1 && !_step3IsCorrect) ...[
+          // 오답 안내 (EMO-16): 제출 후 오답 / 정답 확정 후 오답 탐색
+          if (_step3Evaluated &&
+              _step3SelectedIndex != -1 &&
+              _step3SelectedIndex != data.correctIndex) ...[
             const SizedBox(height: 12),
             _buildStep3WrongGuidance(
               data.options[_step3SelectedIndex].wrongGuidance,
             ),
           ],
-          // 정답 시 원인 설명 + 다음 버튼 (EMO-15, EMO-17)
-          if (_step3IsCorrect) ...[
+          // 정답 시 원인 설명 (EMO-15)
+          if (_step3Evaluated && _step3IsCorrect) ...[
             const SizedBox(height: 12),
             _buildStep3CorrectExplanation(data.correctExplanation),
-            const SizedBox(height: 16),
-            _buildStep3NextButton(),
           ],
+          const SizedBox(height: 16),
+          // 항상 표시 — 제출/다음 이야기 보기 버튼 (EMO-17)
+          _buildStep3ActionButton(data),
           const SizedBox(height: 8),
         ],
       ),
@@ -1149,6 +1154,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
     final option = data.options[index];
     final isSelected = _step3SelectedIndex == index;
     final isCorrect = index == data.correctIndex;
+    final correctConfirmed = _step3Evaluated && _step3IsCorrect;
 
     Color borderColor = const Color(0xFFEBE6DF);
     Color bgColor = Colors.white;
@@ -1156,14 +1162,29 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
     Color numBgColor = AppColors.cardLight;
     Color numTextColor = AppColors.textSub;
 
-    if (isSelected) {
-      if (isCorrect) {
+    // 정답 확정 후 — 정답 옵션은 항상 초록으로 고정
+    if (correctConfirmed && isCorrect) {
+      borderColor = AppColors.primary;
+      bgColor = const Color(0xFFEAF3E8);
+      textColor = AppColors.primary;
+      numBgColor = AppColors.primary;
+      numTextColor = Colors.white;
+    } else if (isSelected) {
+      if (!_step3Evaluated) {
+        // 제출 전 선택 — 중립 강조
+        borderColor = AppColors.primary.withValues(alpha: 0.5);
+        bgColor = const Color(0xFFF0F6EE);
+        textColor = AppColors.primary;
+        numBgColor = AppColors.primary.withValues(alpha: 0.5);
+        numTextColor = Colors.white;
+      } else if (isCorrect) {
         borderColor = AppColors.primary;
         bgColor = const Color(0xFFEAF3E8);
         textColor = AppColors.primary;
         numBgColor = AppColors.primary;
         numTextColor = Colors.white;
       } else {
+        // 제출 후 오답 / 정답 확정 후 탐색 중 오답
         borderColor = const Color(0xFFE8A09A);
         bgColor = const Color(0xFFFFF2F1);
         textColor = const Color(0xFFD04B44);
@@ -1174,10 +1195,16 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
 
     return GestureDetector(
       onTap: () {
-        if (_step3IsCorrect) return;
+        if (correctConfirmed) {
+          // 정답 확정 후 — 오답 탭 시 해설 탐색 가능, 정답 탭 시 무시
+          if (isCorrect) return;
+          setState(() => _step3SelectedIndex = index);
+          return;
+        }
         setState(() {
           _step3SelectedIndex = index;
-          _step3IsCorrect = index == data.correctIndex;
+          // 오답 제출 후 재선택 시 평가 초기화
+          if (_step3Evaluated && !_step3IsCorrect) _step3Evaluated = false;
         });
       },
       child: AnimatedContainer(
@@ -1294,12 +1321,27 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
     );
   }
 
-  // 다음 이야기 보기 버튼 (EMO-17)
-  Widget _buildStep3NextButton() {
+  // 제출 → 정답 확정 시 '다음 이야기 보기'로 전환 (EMO-17)
+  Widget _buildStep3ActionButton(FriendsStep3Data data) {
+    final isConfirmed = _step3Evaluated && _step3IsCorrect;
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _showSuccessOverlay ? null : _handleNext,
+        onPressed: _showSuccessOverlay
+            ? null
+            : () {
+                if (isConfirmed) {
+                  _handleNext();
+                } else {
+                  if (_step3SelectedIndex == -1) return;
+                  setState(() {
+                    _step3Evaluated = true;
+                    _step3IsCorrect =
+                        _step3SelectedIndex == data.correctIndex;
+                  });
+                }
+              },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
@@ -1310,9 +1352,16 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           ),
           elevation: 0,
         ),
-        child: const Text(
-          '다음 이야기 보기',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Text(
+            isConfirmed ? '다음 이야기 보기' : '이게 이유야! 🔍',
+            key: ValueKey(isConfirmed),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ),
     );
@@ -1349,42 +1398,25 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
             _buildStep4Choice(data, i),
             if (i < data.options.length - 1) const SizedBox(height: 10),
           ],
-          // 오답 설명 (EMO-22)
-          if (_step4SelectedIndex != -1 && !_step4IsCorrect) ...[
+          // 오답 설명 (EMO-22): 제출 후 오답 / 정답 확정 후 오답 탐색
+          if (_step4Evaluated &&
+              _step4SelectedIndex != -1 &&
+              _step4SelectedIndex != data.correctIndex) ...[
             const SizedBox(height: 12),
             _buildStep4WrongExplanation(
               data.options[_step4SelectedIndex].wrongExplanation,
             ),
           ],
-          // 정답 피드백 + 다음으로 버튼 (EMO-21)
-          if (_step4IsCorrect) ...[
+          // 정답 피드백 (EMO-21)
+          if (_step4Evaluated && _step4IsCorrect) ...[
             const SizedBox(height: 12),
             _buildStep4CorrectEcho(data.correctEcho),
             const SizedBox(height: 12),
             _buildStep4LeoFeedback(data.leoFeedback),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _showSuccessOverlay ? null : _handleNext,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor:
-                      AppColors.primary.withValues(alpha: 0.5),
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  '다음으로',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
           ],
+          const SizedBox(height: 16),
+          // 항상 표시 — 제출/다음으로 버튼
+          _buildStep4ActionButton(data),
           const SizedBox(height: 8),
         ],
       ),
@@ -1580,6 +1612,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
     final option = data.options[index];
     final isSelected = _step4SelectedIndex == index;
     final isCorrect = index == data.correctIndex;
+    final correctConfirmed = _step4Evaluated && _step4IsCorrect;
 
     Color borderColor = const Color(0xFFEBE6DF);
     Color bgColor = Colors.white;
@@ -1587,14 +1620,29 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
     Color numBgColor = AppColors.cardLight;
     Color numTextColor = AppColors.textSub;
 
-    if (isSelected) {
-      if (isCorrect) {
+    // 정답 확정 후 — 정답 옵션은 항상 초록으로 고정
+    if (correctConfirmed && isCorrect) {
+      borderColor = AppColors.primary;
+      bgColor = const Color(0xFFEAF3E8);
+      textColor = AppColors.primary;
+      numBgColor = AppColors.primary;
+      numTextColor = Colors.white;
+    } else if (isSelected) {
+      if (!_step4Evaluated) {
+        // 제출 전 선택 — 중립 강조
+        borderColor = AppColors.primary.withValues(alpha: 0.5);
+        bgColor = const Color(0xFFF0F6EE);
+        textColor = AppColors.primary;
+        numBgColor = AppColors.primary.withValues(alpha: 0.5);
+        numTextColor = Colors.white;
+      } else if (isCorrect) {
         borderColor = AppColors.primary;
         bgColor = const Color(0xFFEAF3E8);
         textColor = AppColors.primary;
         numBgColor = AppColors.primary;
         numTextColor = Colors.white;
       } else {
+        // 제출 후 오답 / 정답 확정 후 탐색 중 오답
         borderColor = const Color(0xFFE8A09A);
         bgColor = const Color(0xFFFFF2F1);
         textColor = const Color(0xFFD04B44);
@@ -1605,10 +1653,16 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
 
     return GestureDetector(
       onTap: () {
-        if (_step4IsCorrect) return;
+        if (correctConfirmed) {
+          // 정답 확정 후 — 오답 탭 시 해설 탐색 가능, 정답 탭 시 무시
+          if (isCorrect) return;
+          setState(() => _step4SelectedIndex = index);
+          return;
+        }
         setState(() {
           _step4SelectedIndex = index;
-          _step4IsCorrect = index == data.correctIndex;
+          // 오답 제출 후 재선택 시 평가 초기화
+          if (_step4Evaluated && !_step4IsCorrect) _step4Evaluated = false;
         });
       },
       child: AnimatedContainer(
@@ -1767,6 +1821,52 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // 제출 → 정답 확정 시 '다음으로'로 전환
+  Widget _buildStep4ActionButton(FriendsStep4Data data) {
+    final isConfirmed = _step4Evaluated && _step4IsCorrect;
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _showSuccessOverlay
+            ? null
+            : () {
+                if (isConfirmed) {
+                  _handleNext();
+                } else {
+                  if (_step4SelectedIndex == -1) return;
+                  setState(() {
+                    _step4Evaluated = true;
+                    _step4IsCorrect =
+                        _step4SelectedIndex == data.correctIndex;
+                  });
+                }
+              },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 0,
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Text(
+            isConfirmed ? '다음으로' : '이렇게 말할게요! 💬',
+            key: ValueKey(isConfirmed),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
