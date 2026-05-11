@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../screens/math_cycle_screen.dart';
+import '../screens/learning_activity_screen.dart';
 import '../theme/app_colors.dart';
 
 enum LevelStatus { completed, current, locked }
@@ -83,7 +83,9 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
       _loaded = true;
     });
     // LRN_MATH_06: scroll to current level on re-entry
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrentLevel());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _scrollToCurrentLevel(),
+    );
   }
 
   Future<void> _markCycleCompleted(int level) async {
@@ -97,7 +99,9 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
   void _scrollToCurrentLevel() {
     if (!_scrollController.hasClients) return;
     const nodeHeight = 160.0;
-    final currentIndex = _levelDatas.indexWhere((l) => l.status == LevelStatus.current);
+    final currentIndex = _levelDatas.indexWhere(
+      (l) => l.status == LevelStatus.current,
+    );
     if (currentIndex <= 1) return;
     final targetY = (currentIndex * nodeHeight - 80.0).clamp(
       0.0,
@@ -120,12 +124,14 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
   }
 
   List<LevelData> get _levelDatas => _mathLevelDefs
-      .map((d) => LevelData(
-            level: d.level,
-            title: d.cardTitle,
-            description: d.name,
-            status: _statusFor(d.level),
-          ))
+      .map(
+        (d) => LevelData(
+          level: d.level,
+          title: d.cardTitle,
+          description: d.name,
+          status: _statusFor(d.level),
+        ),
+      )
       .toList();
 
   @override
@@ -165,7 +171,10 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
               children: [
                 Positioned.fill(
                   child: CustomPaint(
-                    painter: RoadmapPainter(centers: centers, levels: levelDatas),
+                    painter: RoadmapPainter(
+                      centers: centers,
+                      levels: levelDatas,
+                    ),
                   ),
                 ),
                 for (int i = 0; i < _mathLevelDefs.length; i++)
@@ -202,22 +211,32 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
   }) {
     final isLocked = level.status == LevelStatus.locked;
     final circleWidget = _buildCircleWithDots(level);
-    final cardWidget = SizedBox(width: cardWidth, child: _buildCard(level, def: def));
+    final cardWidget = SizedBox(
+      width: cardWidth,
+      child: _buildCard(level, def: def),
+    );
 
     return GestureDetector(
       onTap: isLocked
           ? null
-          : () => Navigator.push(
+          : () {
+              final completedCycles = _completedCycles[level.level] ?? 0;
+              final initialStep = _isLevelComplete(level.level)
+                  ? 1 // 완료 레벨은 처음부터 복습하도록 함.
+                  : (completedCycles + 1).clamp(1, 5);
+              Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => MathCycleScreen(
+                  builder: (_) => LearningActivityScreen(
                     levelData: level,
-                    onCompleted: level.status == LevelStatus.current
+                    initialStep: initialStep,
+                    onStepCompleted: level.status == LevelStatus.current
                         ? () => _markCycleCompleted(level.level)
                         : null,
                   ),
                 ),
-              ),
+              );
+            },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
@@ -327,10 +346,22 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
               ),
               child: Center(
                 child: isCompleted
-                    ? const Icon(Icons.check_rounded, color: AppColors.primary, size: 38)
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: AppColors.primary,
+                        size: 38,
+                      )
                     : isCurrent
-                    ? const Icon(Icons.eco_rounded, color: AppColors.primary, size: 36)
-                    : Icon(Icons.lock_outline_rounded, color: Colors.grey.shade400, size: 28),
+                    ? const Icon(
+                        Icons.eco_rounded,
+                        color: AppColors.primary,
+                        size: 36,
+                      )
+                    : Icon(
+                        Icons.lock_outline_rounded,
+                        color: Colors.grey.shade400,
+                        size: 28,
+                      ),
               ),
             ),
           ),
@@ -424,11 +455,7 @@ class RoadmapPainter extends CustomPainter {
 
       final path = Path()..moveTo(p1.dx, p1.dy);
       final mid = (p2.dy - p1.dy) / 2;
-      path.cubicTo(
-        p1.dx, p1.dy + mid,
-        p2.dx, p2.dy - mid,
-        p2.dx, p2.dy,
-      );
+      path.cubicTo(p1.dx, p1.dy + mid, p2.dx, p2.dy - mid, p2.dx, p2.dy);
 
       final isCompletedPath =
           levels[i].status == LevelStatus.completed &&
