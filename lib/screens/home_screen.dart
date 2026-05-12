@@ -117,6 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
       'GIFT_2': 'assets/images/leo_ribbon.png',
       'GIFT_3': 'assets/images/leo_flower.png',
       'GIFT_4': 'assets/images/leo_sunglasses.png',
+      'GIFT_5': 'assets/images/leo_dinosaur.png',
+      'GIFT_6': 'assets/images/leo_scientist.png',
+      'GIFT_7': 'assets/images/leo_singer.png',
     };
     return imageMap[_representativeItemType] ?? 'assets/images/leo_default.png';
   }
@@ -124,8 +127,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void _navigateToCloset() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const ClosetScreen()),
-    );
+      MaterialPageRoute(
+        builder: (context) => ClosetScreen(
+          initialAvailablePool: _availablePool,
+          initialRepresentativeItemType: _representativeItemType,
+        ),
+      ),
+    ).then((_) => _fetchData());
   }
 
   @override
