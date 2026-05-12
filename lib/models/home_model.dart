@@ -155,7 +155,7 @@ class AttendanceResult {
 enum TodoStatus { PENDING, IN_PROGRESS, COMPLETED }
 
 // ignore: constant_identifier_names
-enum TodoSource { SYSTEM, AGENT }
+enum TodoSource { SYSTEM, AGENT, USER }
 
 // ignore: constant_identifier_names
 enum LearningType { MATH, LANGUAGE }
