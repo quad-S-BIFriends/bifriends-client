@@ -7,6 +7,10 @@ class TodoItem {
   final int estimatedMinutes;
   bool isCompleted;
   final int? targetTabIndex;
+  final TodoSource _source;
+
+  bool get isUserCreated =>
+      _source == TodoSource.USER || _source == TodoSource.AGENT;
 
   TodoItem({
     this.id,
@@ -15,7 +19,8 @@ class TodoItem {
     required this.estimatedMinutes,
     this.isCompleted = false,
     this.targetTabIndex,
-  });
+    bool isUserCreated = false,
+  }) : _source = isUserCreated ? TodoSource.USER : TodoSource.SYSTEM;
 
   factory TodoItem.fromResponse(TodoResponse res) {
     return TodoItem(
@@ -25,6 +30,8 @@ class TodoItem {
       estimatedMinutes: (res.estimatedTimeSec / 60).ceil().clamp(1, 999),
       isCompleted: res.isCompleted,
       targetTabIndex: _tabIndexForType(res.type),
+      isUserCreated: res.source == TodoSource.USER ||
+          res.source == TodoSource.AGENT,
     );
   }
 
