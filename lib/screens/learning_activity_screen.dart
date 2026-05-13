@@ -573,56 +573,41 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
           ),
           const SizedBox(height: 32),
           Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 100,
-                  child: TextField(
-                    controller: _answerController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textMain,
+            child: SizedBox(
+              width: 140,
+              child: TextField(
+                controller: _answerController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMain,
+                ),
+                decoration: InputDecoration(
+                  hintText: '?',
+                  hintStyle: const TextStyle(color: Color(0xFFDCD5CA)),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFDCD5CA),
+                      width: 1,
                     ),
-                    decoration: InputDecoration(
-                      hintText: '?',
-                      hintStyle: const TextStyle(color: Color(0xFFDCD5CA)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFDCD5CA),
-                          width: 1,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: _isCurrentAnswerCorrect
-                              ? AppColors.primary
-                              : const Color(0xFFF3C74B),
-                          width: 2,
-                        ),
-                      ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: _isCurrentAnswerCorrect
+                          ? AppColors.primary
+                          : const Color(0xFFF3C74B),
+                      width: 2,
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                const Text(
-                  '개',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textMain,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 24),
