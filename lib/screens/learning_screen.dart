@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/learning_roadmap.dart';
+import '../widgets/korean_learning_roadmap.dart';
 import '../theme/app_colors.dart';
 
 class LearningScreen extends StatelessWidget {
@@ -201,16 +202,7 @@ class _RoadmapScreen extends StatelessWidget {
       ),
       body: subject == 'math'
           ? const LearningRoadmap()
-          : const Center(
-              child: Text(
-                '준비 중인 과정입니다 🔒',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSub,
-                ),
-              ),
-            ),
+          : const KoreanLearningRoadmap(),
     );
   }
 }
