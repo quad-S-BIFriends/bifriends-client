@@ -7,12 +7,14 @@ class LearningActivityScreen extends StatefulWidget {
   final LevelData levelData;
   final int initialStep;
   final VoidCallback? onStepCompleted;
+  final String subject;
 
   const LearningActivityScreen({
     super.key,
     required this.levelData,
     this.initialStep = 1,
     this.onStepCompleted,
+    this.subject = 'math',
   });
 
   @override
@@ -32,7 +34,9 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   @override
   void initState() {
     super.initState();
-    _step = mockStepForLevel(widget.levelData.level);
+    _step = widget.subject == 'korean'
+        ? mockKoreanStepForLevel(widget.levelData.level)
+        : mockStepForLevel(widget.levelData.level);
     _currentCycleIdx = (widget.initialStep - 1).clamp(
       0,
       _step.cycles.length - 1,
@@ -71,7 +75,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
       case CycleType.concept:
         return true;
       case CycleType.choice:
-        return _selectedChoice != null && _isCurrentAnswerCorrect;
+        return _selectedChoice != null;
       case CycleType.shortAnswer:
         return _answerController.text.trim().isNotEmpty &&
             _isCurrentAnswerCorrect;
@@ -88,9 +92,13 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   void _onChoiceTap(String option) {
     if (_showWrongFeedback) return;
     setState(() => _selectedChoice = option);
+  }
 
-    final q = _currentCycle.choiceQuestions![_currentQuestionIdx];
-    if (option != q.answer) {
+  void _onConfirm() {
+    if (!_canProceed) return;
+    FocusScope.of(context).unfocus();
+
+    if (_currentCycle.type == CycleType.choice && !_isCurrentAnswerCorrect) {
       setState(() => _showWrongFeedback = true);
       Future.delayed(const Duration(milliseconds: 700), () {
         if (mounted) {
@@ -100,12 +108,8 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
           });
         }
       });
+      return;
     }
-  }
-
-  void _onConfirm() {
-    if (!_canProceed) return;
-    FocusScope.of(context).unfocus();
 
     if (!_isLastQuestion) {
       setState(() {
@@ -355,6 +359,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
   Widget _buildConceptSlide({required Key key}) {
     final slide = _currentCycle.slides![_currentQuestionIdx];
+    final conceptLabel = widget.subject == 'korean' ? '낱말 카드' : '개념 이야기';
 
     return SingleChildScrollView(
       key: key,
@@ -369,8 +374,8 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
               color: const Color(0xFFF0F8ED),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
-              '개념 이야기',
+            child: Text(
+              conceptLabel,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -463,22 +468,20 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
   Widget _buildChoiceOption(String option, String correctAnswer) {
     final isSelected = _selectedChoice == option;
-    final isCorrect = option == correctAnswer;
     final showWrong = isSelected && _showWrongFeedback;
-    final showCorrect = isSelected && isCorrect && !_showWrongFeedback;
 
     Color borderColor = const Color(0xFFDCD5CA);
     Color bgColor = Colors.white;
     Color textColor = AppColors.textMain;
 
-    if (showCorrect) {
-      borderColor = AppColors.primary;
-      bgColor = const Color(0xFFF0F8ED);
-      textColor = AppColors.primary;
-    } else if (showWrong) {
+    if (showWrong) {
       borderColor = const Color(0xFFE57373);
       bgColor = const Color(0xFFFFF3F3);
       textColor = const Color(0xFFE57373);
+    } else if (isSelected) {
+      borderColor = AppColors.primary;
+      bgColor = const Color(0xFFF0F8ED);
+      textColor = AppColors.primary;
     }
 
     return GestureDetector(
@@ -495,11 +498,10 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color:
-                        (showCorrect
-                                ? AppColors.primary
-                                : const Color(0xFFE57373))
-                            .withValues(alpha: 0.15),
+                    color: (showWrong
+                            ? const Color(0xFFE57373)
+                            : AppColors.primary)
+                        .withValues(alpha: 0.15),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -518,12 +520,6 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                 ),
               ),
             ),
-            if (showCorrect)
-              const Icon(
-                Icons.check_circle_rounded,
-                color: AppColors.primary,
-                size: 22,
-              ),
             if (showWrong)
               const Icon(
                 Icons.cancel_rounded,
