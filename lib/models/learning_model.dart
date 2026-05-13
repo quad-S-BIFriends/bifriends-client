@@ -173,6 +173,15 @@ LearningStep mockStepForLevel(int level) {
   }
 }
 
+LearningStep mockKoreanStepForLevel(int level) {
+  switch (level) {
+    case 1:
+      return _koreanLevel1Step;
+    default:
+      return _koreanLevel1Step;
+  }
+}
+
 // ── Level 1: 숫자 세기 ───────────────────────────────────────────────────────
 
 final _level1Step = LearningStep(
@@ -912,6 +921,162 @@ final _level5Step = LearningStep(
           hints: ['5보다 크고 8보다 작은 수를 찾아봐요', '6과 7이 해당돼요', '6+7=13이에요'],
           explanation: '6과 7이 해당되고, 6+7=13이에요!',
           difficulty: 4,
+        ),
+      ],
+    ),
+  ],
+);
+
+// ── Korean Level 1: 비 오는 날 (grade3_step1) ─────────────────────────────────
+
+final _koreanLevel1Step = LearningStep(
+  stepId: 'grade3_step1',
+  stepTitle: '비 오는 날',
+  stepDescription: '감각적 표현과 흉내말을 배워요',
+  cycles: [
+    // Cycle 1: word_card → concept (주룩주룩, 후두둑, 촉촉)
+    LearningCycle(
+      cycleId: 'korean_l1_c1',
+      type: CycleType.concept,
+      slides: const [
+        ConceptSlide(
+          image: '🌧️',
+          text: '주룩주룩\n\n비가 많이 내릴 때 나는 소리예요!',
+          confirmButtonText: '이해했어!',
+        ),
+        ConceptSlide(
+          image: '💧',
+          text: '후두둑\n\n굵은 빗방울이 떨어질 때 나는 소리예요!',
+          confirmButtonText: '이해했어!',
+        ),
+        ConceptSlide(
+          image: '🌿',
+          text: '촉촉\n\n물기가 살짝 있어서 부드러운 느낌이에요!',
+          confirmButtonText: '시작해볼게!',
+        ),
+      ],
+    ),
+    // Cycle 2: fact_check ->  choice 
+    LearningCycle(
+      cycleId: 'korean_l1_c2',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '오늘 날씨는 비가 왔나요?\n\n📖 "오늘은 비가 주룩주룩 내렸어요."',
+          options: ['O', 'X'],
+          answer: 'O',
+          hints: ['첫 번째 문장을 다시 읽어봐요!', "'비가 주룩주룩'이라는 표현이 있어요. 찾았나요?"],
+          explanation: '맞아요! 오늘은 비가 주룩주룩 내렸어요.',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '민준이는 밖에 나가서 비를 맞았나요?\n\n📖 "민준이는 창문 너머로 빗소리를 들으며 앉아 있었어요."',
+          options: ['O', 'X'],
+          answer: 'X',
+          hints: ['민준이가 어디에 있었는지 찾아봐요!', "'창문 너머로'라고 했어요. 창문 안에서 보고 있었던 거예요!"],
+          explanation: '아니에요! 민준이는 창문 안에서 빗소리를 들었어요.',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '민준이가 코로 느낀 것은 무엇인가요?\n\n📖 "흙냄새가 코끝에 살며시 풍겨왔어요."',
+          options: ['흙냄새', '꽃향기', '빵냄새'],
+          answer: '흙냄새',
+          hints: ['코로 느낀 것을 글에서 찾아봐요!', "'코끝에 풍겨왔어요'라는 문장을 읽어봐요. 거의 다 왔어요!"],
+          explanation: '민준이는 흙냄새를 맡았어요!',
+          difficulty: 1,
+        ),
+      ],
+    ),
+    // Cycle 3: diagram_order → choice (사건 순서)
+    LearningCycle(
+      cycleId: 'korean_l1_c3',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '이야기에서 가장 먼저 일어난 일은 무엇인가요?',
+          options: ['비가 내리기 시작했다', '흙냄새가 났다', '꽃잎을 바라봤다'],
+          answer: '비가 내리기 시작했다',
+          hints: ['이야기에서 맨 처음 일어난 일을 찾아봐요!', '글의 첫 번째 문장을 읽어봐요. 할 수 있어요!'],
+          explanation: '가장 먼저 비가 주룩주룩 내리기 시작했어요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '마지막에 민준이가 한 일은 무엇인가요?\n\n📖 "민준이는 촉촉하게 젖은 꽃잎을 바라보며 미소를 지었어요."',
+          options: ['밖으로 나갔다', '젖은 꽃잎을 보며 미소 지었다', '창문을 닫았다'],
+          answer: '젖은 꽃잎을 보며 미소 지었다',
+          hints: ['이야기의 마지막 문장을 찾아봐요!', "'미소를 지었어요'라는 표현이 있어요. 찾았나요?"],
+          explanation: '마지막으로 민준이는 촉촉한 꽃잎을 보며 미소를 지었어요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '빗소리를 들으며 민준이는 어디에 있었나요?\n\n📖 "민준이는 창문 너머로 빗소리를 들으며 앉아 있었어요."',
+          options: ['마당', '창가', '학교'],
+          answer: '창가',
+          hints: ['민준이가 빗소리를 어디서 들었는지 찾아봐요!', "'창문 너머로'라는 표현에서 힌트를 얻어봐요. 거의 다 왔어요!"],
+          explanation: '민준이는 창가에 앉아서 빗소리를 들었어요!',
+          difficulty: 2,
+        ),
+      ],
+    ),
+    // Cycle 4: inference → choice (추론)
+    LearningCycle(
+      cycleId: 'korean_l1_c4',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '꽃잎을 보면서 민준이는 어떤 기분이었을까요?\n\n📖 "민준이는 촉촉하게 젖은 꽃잎을 바라보며 미소를 지었어요."',
+          options: ['행복했을 것이다', '무서웠을 것이다', '화가 났을 것이다'],
+          answer: '행복했을 것이다',
+          hints: ['미소를 짓는다는 건 어떤 기분일 때일까요?', '기분이 좋을 때 우리도 미소를 짓잖아요. 맞아요, 잘하고 있어요!'],
+          explanation: '미소를 짓는 건 기분이 좋을 때예요. 민준이는 행복했을 거예요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: "'살며시 풍겨온다'는 게 어떤 뜻인가요?\n\n📖 \"흙냄새가 코끝에 살며시 풍겨왔어요.\"",
+          options: ['아주 강하게 확 나는 것', '살짝 부드럽게 나는 것', '전혀 안 나는 것'],
+          answer: '살짝 부드럽게 나는 것',
+          hints: ["'살며시'가 어떤 뜻인지 생각해봐요!", '살며시는 아주 조용하고 부드럽게라는 뜻이에요. 거의 다 왔어요!'],
+          explanation: "'살며시'는 조용하고 부드럽게라는 뜻이에요!",
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '빗방울이 지붕을 두드린다고 했어요.\n빗방울을 무엇처럼 나타낸 건가요?\n\n📖 "후두둑후두둑, 빗방울이 지붕을 두드렸어요."',
+          options: ['사람이 손으로 두드리는 것처럼', '새가 날아가는 것처럼', '물이 흘러가는 것처럼'],
+          answer: '사람이 손으로 두드리는 것처럼',
+          hints: ["'두드렸어요'는 누가 하는 행동인지 생각해봐요!", '사람이 문을 두드리는 것처럼, 빗방울도 지붕을 두드린다고 했어요. 잘하고 있어요!'],
+          explanation: '빗방울을 사람처럼 표현했어요. 이런 걸 감각적 표현이라고 해요!',
+          difficulty: 3,
+        ),
+      ],
+    ),
+    // Cycle 5: summary_fill → choice (요약 빈칸)
+    LearningCycle(
+      cycleId: 'korean_l1_c5',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '빈칸에 알맞은 말을 골라봐요!\n\n"오늘은 비가 [  ?  ] 내렸어요."',
+          options: ['주룩주룩', '펑펑', '살살'],
+          answer: '주룩주룩',
+          hints: ['비가 내리는 소리를 나타내는 흉내말이에요!', '비가 많이 내릴 때 쓰는 표현이에요. 거의 다 왔어요!'],
+          explanation: '비가 주룩주룩 내렸어요. 비 내리는 소리를 나타내는 흉내말이에요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '빈칸에 알맞은 말을 골라봐요!\n\n"젖은 꽃잎을 바라보며 민준이는 [  ?  ] 기분이 들었어요."',
+          options: ['행복한', '슬픈', '무서운'],
+          answer: '행복한',
+          hints: ['꽃잎을 보며 미소를 지었어요. 미소를 지을 때는 어떤 기분인가요?', '미소를 지을 때는 기분이 좋을 때예요. 할 수 있어요!'],
+          explanation: '꽃잎을 보며 미소를 지었으니, 행복한 기분이었을 거예요!',
+          difficulty: 2,
+        ),
+        ChoiceQuestion(
+          questionText: '이 글에서 비 오는 소리를 나타낸 낱말은 무엇인가요?',
+          options: ['후두둑후두둑', '쨍그랑쨍그랑', '펑펑'],
+          answer: '후두둑후두둑',
+          hints: ['빗방울이 지붕을 두드리는 소리를 나타낸 낱말이에요!', "'후'로 시작하는 낱말이에요. 거의 다 왔어요!"],
+          explanation: '후두둑후두둑! 빗방울이 지붕을 두드리는 소리예요.',
+          difficulty: 2,
         ),
       ],
     ),
