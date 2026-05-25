@@ -38,18 +38,18 @@ class ClosetItem {
   }
 
   ClosetItem copyWith({bool? owned}) => ClosetItem(
-        itemType: itemType,
-        name: name,
-        emoji: emoji,
-        price: price,
-        owned: owned ?? this.owned,
-      );
+    itemType: itemType,
+    name: name,
+    emoji: emoji,
+    price: price,
+    owned: owned ?? this.owned,
+  );
 
   static String _defaultName(String itemType) {
     const names = {
-      'GIFT_1': '첫 번날 뱃지',
+      'GIFT_1': '책',
       'GIFT_2': '리본',
-      'GIFT_3': '딸기모자',
+      'GIFT_3': '꽃다발',
       'GIFT_4': '선글라스',
       'GIFT_5': '공룡 의상',
       'GIFT_6': '과학자 가운',
@@ -72,47 +72,54 @@ class ClosetItem {
   }
 
   static List<ClosetItem> get allItems => const [
-        ClosetItem(
-            itemType: 'GIFT_1',
-            name: '첫 번날 뱃지',
-            emoji: '📚',
-            price: 80,
-            owned: false),
-        ClosetItem(
-            itemType: 'GIFT_2',
-            name: '리본',
-            emoji: '🎀',
-            price: 120,
-            owned: false),
-        ClosetItem(
-            itemType: 'GIFT_3',
-            name: '딸기모자',
-            emoji: '🍓',
-            price: 150,
-            owned: false),
-        ClosetItem(
-            itemType: 'GIFT_4',
-            name: '선글라스',
-            emoji: '🕶️',
-            price: 200,
-            owned: false),
-        ClosetItem(
-            itemType: 'GIFT_5',
-            name: '공룡 의상',
-            emoji: '🦕',
-            price: 300,
-            owned: false),
-        ClosetItem(
-            itemType: 'GIFT_6',
-            name: '과학자 가운',
-            emoji: '🔬',
-            price: 350,
-            owned: false),
-        ClosetItem(
-            itemType: 'GIFT_7',
-            name: '가수 의상',
-            emoji: '🎤',
-            price: 300,
-            owned: false),
-      ];
+    ClosetItem(
+      itemType: 'GIFT_1',
+      name: '책',
+      emoji: '📚',
+      price: 80,
+      owned: false,
+    ),
+    ClosetItem(
+      itemType: 'GIFT_2',
+      name: '리본',
+      emoji: '🎀',
+      price: 120,
+      owned: false,
+    ),
+    ClosetItem(
+      itemType: 'GIFT_3',
+      name: '꽃다발',
+      emoji: '🍓',
+      price: 150,
+      owned: false,
+    ),
+    ClosetItem(
+      itemType: 'GIFT_4',
+      name: '선글라스',
+      emoji: '🕶️',
+      price: 200,
+      owned: false,
+    ),
+    ClosetItem(
+      itemType: 'GIFT_5',
+      name: '공룡 의상',
+      emoji: '🦕',
+      price: 300,
+      owned: false,
+    ),
+    ClosetItem(
+      itemType: 'GIFT_6',
+      name: '과학자 가운',
+      emoji: '🔬',
+      price: 350,
+      owned: false,
+    ),
+    ClosetItem(
+      itemType: 'GIFT_7',
+      name: '가수 의상',
+      emoji: '🎤',
+      price: 300,
+      owned: false,
+    ),
+  ];
 }
