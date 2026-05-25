@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/learning_model.dart';
 import '../widgets/learning_roadmap.dart' show LevelData;
+import '../widgets/rich_inline_text.dart';
 import '../theme/app_colors.dart';
 
 class LearningActivityScreen extends StatefulWidget {
@@ -32,6 +33,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   bool _showSuccessOverlay = false;
   bool _isLastStepCompleted = false;
   late TextEditingController _answerController;
+  late TextEditingController _denominatorController; // used for fraction short-answer
 
   @override
   void initState() {
@@ -45,11 +47,14 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
     );
     _answerController = TextEditingController();
     _answerController.addListener(() => setState(() {}));
+    _denominatorController = TextEditingController();
+    _denominatorController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _answerController.dispose();
+    _denominatorController.dispose();
     super.dispose();
   }
 
@@ -68,6 +73,12 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
         return _selectedChoice == q.answer;
       case CycleType.shortAnswer:
         final q = _currentCycle.shortAnswerQuestions![_currentQuestionIdx];
+        if (q.fractionAnswer != null) {
+          final num = int.tryParse(_answerController.text.trim());
+          final den = int.tryParse(_denominatorController.text.trim());
+          return num == q.fractionAnswer!.numerator &&
+              den == q.fractionAnswer!.denominator;
+        }
         return _answerController.text.trim() == q.answer;
     }
   }
@@ -79,8 +90,13 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
       case CycleType.choice:
         return _selectedChoice != null;
       case CycleType.shortAnswer:
-        return _answerController.text.trim().isNotEmpty &&
-            _isCurrentAnswerCorrect;
+        final q = _currentCycle.shortAnswerQuestions![_currentQuestionIdx];
+        if (q.fractionAnswer != null) {
+          final num = int.tryParse(_answerController.text.trim());
+          final den = int.tryParse(_denominatorController.text.trim());
+          return num != null && den != null && _isCurrentAnswerCorrect;
+        }
+        return _answerController.text.trim().isNotEmpty && _isCurrentAnswerCorrect;
     }
   }
 
@@ -89,6 +105,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
     _hintsShown = 0;
     _showWrongFeedback = false;
     _answerController.clear();
+    _denominatorController.clear();
   }
 
   void _onChoiceTap(String option) {
@@ -266,8 +283,8 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
             ),
           ),
           const SizedBox(height: 28),
-          Text(
-            slide.text,
+          RichInlineText(
+            spans: slide.spans,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -310,8 +327,8 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                 ),
               ],
             ),
-            child: Text(
-              q.questionText,
+            child: RichInlineText(
+              spans: q.questionSpans,
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -322,13 +339,20 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          Column(
-            children: q.options
-                .map((opt) => _buildChoiceOption(opt, q.answer))
-                .toList(),
-          ),
+          if (q.fractionOptions != null)
+            Column(
+              children: q.fractionOptions!
+                  .map((f) => _buildFractionChoiceOption(f, q.answer))
+                  .toList(),
+            )
+          else
+            Column(
+              children: q.options
+                  .map((opt) => _buildChoiceOption(opt, q.answer))
+                  .toList(),
+            ),
           const SizedBox(height: 16),
-          _buildHintPanel(q.hints),
+          _buildHintPanel(q.hintSpans),
           const SizedBox(height: 8),
           _buildQuestionDots(),
         ],
@@ -403,6 +427,76 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
     );
   }
 
+  Widget _buildFractionChoiceOption(FractionValue f, String correctAnswer) {
+    final key = f.key;
+    final isSelected = _selectedChoice == key;
+    final showWrong = isSelected && _showWrongFeedback;
+
+    Color borderColor = const Color(0xFFDCD5CA);
+    Color bgColor = Colors.white;
+    Color textColor = AppColors.textMain;
+
+    if (showWrong) {
+      borderColor = const Color(0xFFE57373);
+      bgColor = const Color(0xFFFFF3F3);
+      textColor = const Color(0xFFE57373);
+    } else if (isSelected) {
+      borderColor = AppColors.primary;
+      bgColor = const Color(0xFFF0F8ED);
+      textColor = AppColors.primary;
+    }
+
+    return GestureDetector(
+      onTap: () => _onChoiceTap(key),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.only(bottom: 12),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: (showWrong
+                            ? const Color(0xFFE57373)
+                            : AppColors.primary)
+                        .withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            FractionWidget(
+              numerator: f.numerator,
+              denominator: f.denominator,
+              color: textColor,
+            ),
+            if (f.unit != null) ...[
+              const SizedBox(width: 4),
+              Text(
+                f.unit!,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
+            ],
+            const Spacer(),
+            if (showWrong)
+              const Icon(Icons.cancel_rounded, color: Color(0xFFE57373), size: 22),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Short answer question ─────────────────────────────────────────────────
 
   Widget _buildShortAnswerQuestion({required Key key}) {
@@ -431,8 +525,8 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                 ),
               ],
             ),
-            child: Text(
-              q.questionText,
+            child: RichInlineText(
+              spans: q.questionSpans,
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -443,46 +537,49 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          Center(
-            child: SizedBox(
-              width: 140,
-              child: TextField(
-                controller: _answerController,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textMain,
-                ),
-                decoration: InputDecoration(
-                  hintText: '?',
-                  hintStyle: const TextStyle(color: Color(0xFFDCD5CA)),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFDCD5CA),
-                      width: 1,
-                    ),
+          if (q.fractionAnswer != null)
+            _buildFractionAnswerInput(q.fractionAnswer!.unit)
+          else
+            Center(
+              child: SizedBox(
+                width: 140,
+                child: TextField(
+                  controller: _answerController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textMain,
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: _isCurrentAnswerCorrect
-                          ? AppColors.primary
-                          : const Color(0xFFF3C74B),
-                      width: 2,
+                  decoration: InputDecoration(
+                    hintText: '?',
+                    hintStyle: const TextStyle(color: Color(0xFFDCD5CA)),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFDCD5CA),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: _isCurrentAnswerCorrect
+                            ? AppColors.primary
+                            : const Color(0xFFF3C74B),
+                        width: 2,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
           const SizedBox(height: 24),
-          _buildHintPanel(q.hints),
+          _buildHintPanel(q.hintSpans),
           const SizedBox(height: 8),
           _buildQuestionDots(),
         ],
@@ -510,6 +607,83 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
     );
   }
 
+  Widget _buildFractionAnswerInput(String? unit) {
+    final inputDecoration = InputDecoration(
+      hintText: '?',
+      hintStyle: const TextStyle(color: Color(0xFFDCD5CA)),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(vertical: 16),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFDCD5CA), width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+          color: _isCurrentAnswerCorrect ? AppColors.primary : const Color(0xFFF3C74B),
+          width: 2,
+        ),
+      ),
+    );
+    const fieldStyle = TextStyle(
+      fontSize: 28,
+      fontWeight: FontWeight.w800,
+      color: AppColors.textMain,
+    );
+
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 100,
+                child: TextField(
+                  controller: _answerController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: fieldStyle,
+                  decoration: inputDecoration,
+                ),
+              ),
+              Container(
+                height: 2,
+                width: 100,
+                color: AppColors.textMain,
+                margin: const EdgeInsets.symmetric(vertical: 4),
+              ),
+              SizedBox(
+                width: 100,
+                child: TextField(
+                  controller: _denominatorController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: fieldStyle,
+                  decoration: inputDecoration,
+                ),
+              ),
+            ],
+          ),
+          if (unit != null) ...[
+            const SizedBox(width: 10),
+            Text(
+              unit,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textMain,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuestionDots() {
     final count = _currentCycle.questionCount;
     return Padding(
@@ -533,11 +707,11 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
     );
   }
 
-  Widget _buildHintPanel(List<String> hints) {
+  Widget _buildHintPanel(List<List<RichSpan>> hintSpans) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_hintsShown < hints.length)
+        if (_hintsShown < hintSpans.length)
           SizedBox(
             height: 60,
             child: ElevatedButton(
@@ -550,7 +724,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                 elevation: 0,
               ),
               child: Text(
-                '💡 힌트 보기 (${hints.length - _hintsShown}개 남음)',
+                '💡 힌트 보기 (${hintSpans.length - _hintsShown}개 남음)',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -569,13 +743,28 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                 color: const Color(0xFFFFF8E7),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
-                '힌트 ${i + 1}: ${hints[i]}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFA07000),
-                ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '힌트 ${i + 1}: ',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFA07000),
+                    ),
+                  ),
+                  Expanded(
+                    child: RichInlineText(
+                      spans: hintSpans[i],
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFA07000),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

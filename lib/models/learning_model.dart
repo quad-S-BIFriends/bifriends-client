@@ -1,73 +1,264 @@
+// ── Rich text types ───────────────────────────────────────────────────────────
+
+sealed class RichSpan {
+  const RichSpan();
+}
+
+class PlainSpan extends RichSpan {
+  final String value;
+  const PlainSpan(this.value);
+}
+
+class FractionSpan extends RichSpan {
+  final int numerator;
+  final int denominator;
+  const FractionSpan({required this.numerator, required this.denominator});
+}
+
+/// A fraction value used for options and answers in grade 6+ content.
+class FractionValue {
+  final int numerator;
+  final int denominator;
+  final String? unit;
+
+  const FractionValue({
+    required this.numerator,
+    required this.denominator,
+    this.unit,
+  });
+
+  /// String key used for answer matching (e.g. "2/3").
+  String get key => '$numerator/$denominator';
+
+  factory FractionValue.fromJson(Map<String, dynamic> json) => FractionValue(
+        numerator: json['numerator'] as int,
+        denominator: json['denominator'] as int,
+        unit: json['unit'] as String?,
+      );
+}
+
+// Parses a JSON `text` field — either a plain String or a List of segments.
+List<RichSpan> _parseSpans(dynamic raw) {
+  if (raw is String) return [PlainSpan(raw)];
+  return (raw as List).map<RichSpan>((seg) {
+    final m = seg as Map<String, dynamic>;
+    if (m['type'] == 'fraction') {
+      return FractionSpan(
+          numerator: m['numerator'] as int, denominator: m['denominator'] as int);
+    }
+    return PlainSpan(m['value'] as String);
+  }).toList();
+}
+
+// Flattens spans to a plain string for backward-compat.
+String _spansToString(List<RichSpan> spans) => spans.map((s) {
+      if (s is PlainSpan) return s.value;
+      final f = s as FractionSpan;
+      return '${f.numerator}/${f.denominator}';
+    }).join('');
+
+// ── Learning models ───────────────────────────────────────────────────────────
+
 enum CycleType { concept, choice, shortAnswer }
 
 class ConceptSlide {
   final String image;
   final String text;
+  final List<RichSpan>? richText;
   final String confirmButtonText;
 
   const ConceptSlide({
     required this.image,
     required this.text,
+    this.richText,
     required this.confirmButtonText,
   });
 
-  factory ConceptSlide.fromJson(Map<String, dynamic> json) => ConceptSlide(
-        image: json['image'] as String,
-        text: json['text'] as String,
-        confirmButtonText: json['confirm_button_text'] as String,
-      );
+  /// Always returns a renderable span list (falls back to plain string).
+  List<RichSpan> get spans => richText ?? [PlainSpan(text)];
+
+  factory ConceptSlide.fromJson(Map<String, dynamic> json) {
+    final rich = _parseSpans(json['text']);
+    return ConceptSlide(
+      image: json['image'] as String,
+      text: _spansToString(rich),
+      richText: rich,
+      confirmButtonText: json['confirm_button_text'] as String,
+    );
+  }
 }
 
 class ChoiceQuestion {
   final String questionText;
+  final List<RichSpan>? richQuestionText;
   final List<String> options;
-  final String answer;
+  final List<FractionValue>? fractionOptions;
+  final String answer;                  // key: "2/3" for fractions, plain text otherwise
+  final FractionValue? fractionAnswer;  // set when answer is a fraction
   final List<String> hints;
+  final List<List<RichSpan>>? richHints;
   final String explanation;
+  final List<RichSpan>? richExplanation;
   final int difficulty;
 
   const ChoiceQuestion({
     required this.questionText,
+    this.richQuestionText,
     required this.options,
+    this.fractionOptions,
     required this.answer,
+    this.fractionAnswer,
     required this.hints,
+    this.richHints,
     required this.explanation,
+    this.richExplanation,
     required this.difficulty,
   });
 
-  factory ChoiceQuestion.fromJson(Map<String, dynamic> json) => ChoiceQuestion(
-        questionText: json['question_text'] as String,
-        options: List<String>.from(json['options'] as List),
-        answer: json['answer'] as String,
-        hints: List<String>.from(json['hints'] as List),
-        explanation: json['explanation'] as String,
-        difficulty: json['difficulty'] as int,
-      );
+  List<RichSpan> get questionSpans => richQuestionText ?? [PlainSpan(questionText)];
+  List<List<RichSpan>> get hintSpans =>
+      richHints ?? hints.map((h) => <RichSpan>[PlainSpan(h)]).toList();
+  List<RichSpan> get explanationSpans => richExplanation ?? [PlainSpan(explanation)];
+
+  factory ChoiceQuestion.fromJson(Map<String, dynamic> json) {
+    // Question text (may be a List of segments in grade 6 format)
+    final rich = _parseSpans(json['text'] ?? json['question_text'] ?? '');
+
+    // Options: List<String> (grade 3) or List<{display, numerator, ...}> (grade 6)
+    final rawOptions = json['options'] as List;
+    List<FractionValue>? fracOpts;
+    List<String> strOpts;
+    if (rawOptions.isNotEmpty && rawOptions.first is Map) {
+      fracOpts = rawOptions
+          .cast<Map<String, dynamic>>()
+          .map(FractionValue.fromJson)
+          .toList();
+      strOpts = fracOpts.map((f) => f.key).toList();
+    } else {
+      strOpts = rawOptions.cast<String>();
+    }
+
+    // Answer: String (grade 3) or {numerator, denominator, unit} (grade 6)
+    final rawAnswer = json['answer'];
+    FractionValue? fracAns;
+    String strAnswer;
+    if (rawAnswer is Map<String, dynamic>) {
+      fracAns = FractionValue.fromJson(rawAnswer);
+      strAnswer = fracAns.key;
+    } else {
+      strAnswer = rawAnswer as String;
+    }
+
+    // Hints: List<String> (grade 3) or List<List<segment>> (grade 6)
+    final rawHints = json['hint'] as List? ?? json['hints'] as List? ?? [];
+    List<List<RichSpan>>? richH;
+    List<String> strH;
+    if (rawHints.isNotEmpty && rawHints.first is List) {
+      richH = rawHints.map((h) => _parseSpans(h)).toList();
+      strH = richH.map(_spansToString).toList();
+    } else {
+      strH = rawHints.cast<String>();
+    }
+
+    // Explanation: String (grade 3) or List<segment> (grade 6)
+    final rawExp = json['explanation'];
+    List<RichSpan>? richExp;
+    String strExp;
+    if (rawExp is List) {
+      richExp = _parseSpans(rawExp);
+      strExp = _spansToString(richExp);
+    } else {
+      strExp = rawExp as String? ?? '';
+    }
+
+    return ChoiceQuestion(
+      questionText: _spansToString(rich),
+      richQuestionText: rich,
+      options: strOpts,
+      fractionOptions: fracOpts,
+      answer: strAnswer,
+      fractionAnswer: fracAns,
+      hints: strH,
+      richHints: richH,
+      explanation: strExp,
+      richExplanation: richExp,
+      difficulty: json['difficulty'] as int? ?? 1,
+    );
+  }
 }
 
 class ShortAnswerQuestion {
   final String questionText;
-  final String answer;
+  final List<RichSpan>? richQuestionText;
+  final String answer;                  // "557" for text, "11/8" for fractions
+  final FractionValue? fractionAnswer;  // set when answer is a fraction
   final List<String> hints;
+  final List<List<RichSpan>>? richHints;
   final String explanation;
+  final List<RichSpan>? richExplanation;
   final int difficulty;
 
   const ShortAnswerQuestion({
     required this.questionText,
+    this.richQuestionText,
     required this.answer,
+    this.fractionAnswer,
     required this.hints,
+    this.richHints,
     required this.explanation,
+    this.richExplanation,
     required this.difficulty,
   });
 
-  factory ShortAnswerQuestion.fromJson(Map<String, dynamic> json) =>
-      ShortAnswerQuestion(
-        questionText: json['question_text'] as String,
-        answer: json['answer'] as String,
-        hints: List<String>.from(json['hints'] as List),
-        explanation: json['explanation'] as String,
-        difficulty: json['difficulty'] as int,
-      );
+  List<RichSpan> get questionSpans => richQuestionText ?? [PlainSpan(questionText)];
+  List<List<RichSpan>> get hintSpans =>
+      richHints ?? hints.map((h) => <RichSpan>[PlainSpan(h)]).toList();
+
+  factory ShortAnswerQuestion.fromJson(Map<String, dynamic> json) {
+    final rich = _parseSpans(json['text'] ?? json['question_text'] ?? '');
+
+    final rawAnswer = json['answer'];
+    FractionValue? fracAns;
+    String strAnswer;
+    if (rawAnswer is Map<String, dynamic>) {
+      fracAns = FractionValue.fromJson(rawAnswer);
+      strAnswer = fracAns.key;
+    } else {
+      strAnswer = rawAnswer as String;
+    }
+
+    final rawHints = json['hint'] as List? ?? json['hints'] as List? ?? [];
+    List<List<RichSpan>>? richH;
+    List<String> strH;
+    if (rawHints.isNotEmpty && rawHints.first is List) {
+      richH = rawHints.map((h) => _parseSpans(h)).toList();
+      strH = richH.map(_spansToString).toList();
+    } else {
+      strH = rawHints.cast<String>();
+    }
+
+    final rawExp = json['explanation'];
+    List<RichSpan>? richExp;
+    String strExp;
+    if (rawExp is List) {
+      richExp = _parseSpans(rawExp);
+      strExp = _spansToString(richExp);
+    } else {
+      strExp = rawExp as String? ?? '';
+    }
+
+    return ShortAnswerQuestion(
+      questionText: _spansToString(rich),
+      richQuestionText: rich,
+      answer: strAnswer,
+      fractionAnswer: fracAns,
+      hints: strH,
+      richHints: richH,
+      explanation: strExp,
+      richExplanation: richExp,
+      difficulty: json['difficulty'] as int? ?? 1,
+    );
+  }
 }
 
 class LearningCycle {
@@ -106,8 +297,11 @@ class LearningCycle {
       default:
         type = CycleType.concept;
     }
+    // Support both 'cycle_id' (grade 3) and 'cycle_number' (grade 6) formats
+    final cycleId = json['cycle_id'] as String? ??
+        'cycle_${json['cycle_number']}';
     return LearningCycle(
-      cycleId: json['cycle_id'] as String,
+      cycleId: cycleId,
       type: type,
       slides: type == CycleType.concept
           ? (json['slides'] as List)
@@ -921,6 +1115,133 @@ final _level5Step = LearningStep(
           hints: ['5보다 크고 8보다 작은 수를 찾아봐요', '6과 7이 해당돼요', '6+7=13이에요'],
           explanation: '6과 7이 해당되고, 6+7=13이에요!',
           difficulty: 4,
+        ),
+      ],
+    ),
+  ],
+);
+
+// ── Level 6 (임시): 분수 렌더링 테스트용 ─────────────────────────────────────
+
+final _level6Step = LearningStep(
+  stepId: 'math_grade6_step_1',
+  stepTitle: '분수',
+  stepDescription: '분수를 알아봐요',
+  cycles: [
+    // Cycle 1: concept — 자연수 ÷ 자연수 = 분수
+    LearningCycle(
+      cycleId: 'math_l6_c1',
+      type: CycleType.concept,
+      slides: const [
+        ConceptSlide(
+          image: '🌾',
+          richText: [
+            PlainSpan('밀가루 3kg을 4봉지에 똑같이 나눠 담으려고 해요. 한 봉지에 몇 kg씩 담으면 될까요?'),
+          ],
+          text: '밀가루 3kg을 4봉지에 똑같이 나눠 담으려고 해요. 한 봉지에 몇 kg씩 담으면 될까요?',
+          confirmButtonText: '확인',
+        ),
+        ConceptSlide(
+          image: '➗',
+          richText: [
+            PlainSpan('3 ÷ 4는 딱 나눠지지 않아요. 이럴 때는 분수로 나타낼 수 있어요! 나눠지는 수 3이 분자, 나누는 수 4가 분모가 돼요. 3 ÷ 4 = '),
+            FractionSpan(numerator: 3, denominator: 4),
+            PlainSpan('예요!'),
+          ],
+          text: '3 ÷ 4는 딱 나눠지지 않아요. 이럴 때는 분수로 나타낼 수 있어요! 3 ÷ 4 = 3/4예요!',
+          confirmButtonText: '확인',
+        ),
+        ConceptSlide(
+          image: '📦',
+          richText: [
+            PlainSpan('자연수 ÷ 자연수는 분수로 나타낼 수 있어요. 한 봉지에 '),
+            FractionSpan(numerator: 3, denominator: 4),
+            PlainSpan('kg씩 담으면 돼요. 같이 해봐요!'),
+          ],
+          text: '자연수 ÷ 자연수는 분수로 나타낼 수 있어요. 한 봉지에 3/4kg씩 담으면 돼요.',
+          confirmButtonText: '시작해볼까요?',
+        ),
+      ],
+    ),
+    // Cycle 2: choice — 분수 크기 비교 (fraction options)
+    LearningCycle(
+      cycleId: 'math_l6_c2',
+      type: CycleType.choice,
+      choiceQuestions: const [
+        ChoiceQuestion(
+          questionText: '다음 중 가장 큰 분수는?',
+          richQuestionText: [PlainSpan('다음 중 가장 큰 분수는?')],
+          options: ['1/2', '1/3', '1/4'],
+          fractionOptions: [
+            FractionValue(numerator: 1, denominator: 2),
+            FractionValue(numerator: 1, denominator: 3),
+            FractionValue(numerator: 1, denominator: 4),
+          ],
+          answer: '1/2',
+          fractionAnswer: FractionValue(numerator: 1, denominator: 2),
+          hints: ['분모가 작을수록 더 큰 분수예요!'],
+          richHints: [
+            [
+              PlainSpan('분모(아래 수)가 작을수록 '),
+              FractionSpan(numerator: 1, denominator: 2),
+              PlainSpan(' 처럼 더 큰 분수가 돼요!'),
+            ],
+          ],
+          explanation: '1/2이 가장 커요!',
+          difficulty: 1,
+        ),
+        ChoiceQuestion(
+          questionText: '다음 중 가장 작은 분수는?',
+          richQuestionText: [
+            PlainSpan('다음 중 '),
+            PlainSpan('가장 작은'),
+            PlainSpan(' 분수는?'),
+          ],
+          options: ['2/5', '2/3', '2/7'],
+          fractionOptions: [
+            FractionValue(numerator: 2, denominator: 5),
+            FractionValue(numerator: 2, denominator: 3),
+            FractionValue(numerator: 2, denominator: 7),
+          ],
+          answer: '2/7',
+          fractionAnswer: FractionValue(numerator: 2, denominator: 7),
+          hints: ['분자가 같을 때는 분모가 클수록 작아요!'],
+          explanation: '2/7이 가장 작아요!',
+          difficulty: 2,
+        ),
+      ],
+    ),
+    // Cycle 3: short_answer — 분수 직접 입력
+    LearningCycle(
+      cycleId: 'math_l6_c3',
+      type: CycleType.shortAnswer,
+      shortAnswerQuestions: const [
+        ShortAnswerQuestion(
+          questionText: '사과 8개 중 3개를 먹었어요.\n먹은 사과는 전체의 얼마인가요?',
+          richQuestionText: [
+            PlainSpan('사과 8개 중 3개를 먹었어요.\n먹은 사과는 전체의 얼마인가요?'),
+          ],
+          answer: '3/8',
+          fractionAnswer: FractionValue(numerator: 3, denominator: 8),
+          hints: ['전체가 8개니까 분모는 8이에요!', '먹은 게 3개니까 분자는 3이에요!'],
+          richHints: [
+            [PlainSpan('전체가 8개니까 분모(아래)는 8이에요!')],
+            [
+              PlainSpan('먹은 게 3개니까 분자(위)는 3 → 정답은 '),
+              FractionSpan(numerator: 3, denominator: 8),
+              PlainSpan(' 이에요!'),
+            ],
+          ],
+          explanation: '3/8이에요!',
+          difficulty: 3,
+        ),
+        ShortAnswerQuestion(
+          questionText: '리본 12cm 중 5cm를 잘랐어요.\n자른 부분은 전체의 얼마인가요?',
+          answer: '5/12',
+          fractionAnswer: FractionValue(numerator: 5, denominator: 12, unit: ''),
+          hints: ['분모는 전체 길이, 분자는 자른 길이예요!'],
+          explanation: '5/12이에요!',
+          difficulty: 3,
         ),
       ],
     ),
