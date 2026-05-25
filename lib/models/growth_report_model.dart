@@ -127,15 +127,13 @@ class GrowthReport {
         SubjectReport(
           name: '국어',
           type: SubjectType.korean,
-          goodPoint:
-              '비 오는 날 학습을 통해 감각적 표현을 익히고 문장을 완성하는 능력이 향상되었어요.',
+          goodPoint: '비 오는 날 학습을 통해 감각적 표현을 익히고 문장을 완성하는 능력이 향상되었어요.',
           hardPoint: '더 다양한 어휘를 접할 수 있도록 독서를 권장해 주세요.',
         ),
         SubjectReport(
           name: '수학',
           type: SubjectType.math,
-          goodPoint:
-              '더하기 개념을 완벽히 이해하고 빠르게 계산하는 연습을 잘 해내고 있어요.',
+          goodPoint: '더하기 개념을 완벽히 이해하고 빠르게 계산하는 연습을 잘 해내고 있어요.',
           hardPoint: null,
         ),
       ],
@@ -160,8 +158,7 @@ class GrowthReport {
         SubjectReport(
           name: '수학',
           type: SubjectType.math,
-          goodPoint:
-              '도형 알기 단계를 완료하고 세모, 네모, 동그라미를 완벽하게 구분할 수 있게 되었어요.',
+          goodPoint: '도형 알기 단계를 완료하고 세모, 네모, 동그라미를 완벽하게 구분할 수 있게 되었어요.',
           hardPoint: '집중 시간을 조금 더 늘려보면 좋겠어요.',
         ),
       ],
@@ -172,10 +169,7 @@ class GrowthReport {
       summary:
           '꾸준한 학습 습관이 결실을 맺고 있어요. '
           '정우치치는 매일 조금씩 성장하며 학습에 대한 흥미를 높여가고 있습니다.',
-      pattern: LearningPattern(
-        studyDays: ['화', '수', '금'],
-        totalStudyCount: 7,
-      ),
+      pattern: LearningPattern(studyDays: ['화', '수', '금'], totalStudyCount: 7),
       subjects: [
         SubjectReport(
           name: '국어',
@@ -186,8 +180,7 @@ class GrowthReport {
         SubjectReport(
           name: '수학',
           type: SubjectType.math,
-          goodPoint:
-              '숫자 세기 1단계를 마쳤어요! 1부터 10까지 자신있게 셀 수 있게 되었습니다.',
+          goodPoint: '숫자 세기 1단계를 마쳤어요! 1부터 10까지 자신있게 셀 수 있게 되었습니다.',
           hardPoint: null,
         ),
       ],
@@ -235,10 +228,7 @@ class GrowthReport {
     summary:
         '이번 주도 정우치치는 꾸준히 학습에 참여하고 있어요! '
         '새로운 도전을 이어가며 성장하는 모습을 확인해보세요.',
-    pattern: LearningPattern(
-      studyDays: ['월', '화', '수'],
-      totalStudyCount: 5,
-    ),
+    pattern: LearningPattern(studyDays: ['월', '화', '수'], totalStudyCount: 5),
     subjects: [
       SubjectReport(
         name: '국어',
