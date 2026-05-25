@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/learning_model.dart';
 import '../widgets/learning_roadmap.dart' show LevelData;
@@ -29,6 +30,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   String? _selectedChoice;
   bool _showWrongFeedback = false;
   bool _showSuccessOverlay = false;
+  bool _isLastStepCompleted = false;
   late TextEditingController _answerController;
 
   @override
@@ -116,108 +118,14 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
         _currentQuestionIdx++;
         _resetQuestionState();
       });
-    } else if (!_isLastCycle) {
-      setState(() => _showSuccessOverlay = true);
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) {
-          widget.onStepCompleted?.call();
-          setState(() {
-            _showSuccessOverlay = false;
-            _currentCycleIdx++;
-            _currentQuestionIdx = 0;
-            _resetQuestionState();
-          });
-        }
-      });
     } else {
+      // Step (cycle) complete — mark progress and show celebration
       widget.onStepCompleted?.call();
-      _showRewardDialog();
+      setState(() {
+        _isLastStepCompleted = _isLastCycle;
+        _showSuccessOverlay = true;
+      });
     }
-  }
-
-  void _showRewardDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(32),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      spreadRadius: 4,
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Text('🌿', style: TextStyle(fontSize: 40)),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                '풀 획득!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textMain,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '경험치 +10',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSub,
-                ),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    '계속하기',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -244,47 +152,9 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
           ),
           if (_showSuccessOverlay)
             Positioned.fill(
-              child: Container(
-                color: Colors.white.withValues(alpha: 0.9),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 4,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.2),
-                              blurRadius: 20,
-                              spreadRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.check,
-                          color: AppColors.primary,
-                          size: 60,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        '와! 정말 잘했어! 🎉',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              child: _StepCompletionOverlay(
+                isLastStep: _isLastStepCompleted,
+                onReturn: () => Navigator.pop(context),
               ),
             ),
         ],
@@ -498,10 +368,11 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: (showWrong
-                            ? const Color(0xFFE57373)
-                            : AppColors.primary)
-                        .withValues(alpha: 0.15),
+                    color:
+                        (showWrong
+                                ? const Color(0xFFE57373)
+                                : AppColors.primary)
+                            .withValues(alpha: 0.15),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -725,7 +596,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
     } else if (_currentCycle.type == CycleType.concept) {
       label = '다음';
     } else {
-      label = _isLastQuestion ? '확인' : '확인';
+      label = '확인';
     }
 
     return Container(
@@ -760,4 +631,222 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
       ),
     );
   }
+}
+
+// ── Step completion celebration overlay ──────────────────────────────────────
+
+class _StepCompletionOverlay extends StatefulWidget {
+  final bool isLastStep;
+  final VoidCallback onReturn;
+
+  const _StepCompletionOverlay({
+    required this.isLastStep,
+    required this.onReturn,
+  });
+
+  @override
+  State<_StepCompletionOverlay> createState() => _StepCompletionOverlayState();
+}
+
+class _StepCompletionOverlayState extends State<_StepCompletionOverlay>
+    with TickerProviderStateMixin {
+  late AnimationController _confettiController;
+  late AnimationController _contentController;
+  late Animation<double> _contentOpacity;
+  late Animation<double> _contentScale;
+
+  final List<_ConfettiParticle> _particles = [];
+  final Random _random = Random();
+
+  @override
+  void initState() {
+    super.initState();
+
+    _confettiController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    );
+
+    _contentController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+
+    _contentOpacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _contentController, curve: Curves.easeOut),
+    );
+
+    _contentScale = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _contentController, curve: Curves.elasticOut),
+    );
+
+    _generateParticles();
+    _confettiController.forward();
+
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) _contentController.forward();
+    });
+  }
+
+  void _generateParticles() {
+    final emojis = ['⭐', '🌟', '✨', '🎉', '🎊', '💫', '🌈', '🎈'];
+    for (int i = 0; i < 40; i++) {
+      // Fan-shaped burst: angles 20°~160° so particles shoot upward in a wide cone
+      final angleDeg = 20.0 + _random.nextDouble() * 140.0;
+      final angleRad = angleDeg * pi / 180;
+      final speed = 0.7 + _random.nextDouble() * 1.0;
+
+      _particles.add(
+        _ConfettiParticle(
+          emoji: emojis[_random.nextInt(emojis.length)],
+          startX: 0.4 + _random.nextDouble() * 0.2, // clustered near center
+          startY: 0.88, // near bottom of screen
+          velocityX: cos(angleRad) * speed,
+          velocityY: -sin(angleRad) * speed, // negative = upward
+          gravity: 1.4 + _random.nextDouble() * 0.8, // pulls back down
+          delay: _random.nextDouble() * 0.18, // slight stagger
+          size: 20 + _random.nextDouble() * 24,
+          rotationSpeed: (_random.nextDouble() - 0.5) * 8,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: SafeArea(
+        child: Stack(
+          children: [
+            // Confetti particles — single AnimatedBuilder for all 40 particles
+            AnimatedBuilder(
+              animation: _confettiController,
+              builder: (ctx, _) {
+                final progress = _confettiController.value;
+                final size = MediaQuery.of(ctx).size;
+                return Stack(
+                  children: _particles.map((p) {
+                    if (progress < p.delay) return const SizedBox.shrink();
+
+                    final t = ((progress - p.delay) / (1 - p.delay)).clamp(0.0, 1.0);
+                    // Projectile motion: x = start + vx·t, y = start + vy·t + ½·g·t²
+                    final x = (p.startX + p.velocityX * t) * size.width;
+                    final y = (p.startY + p.velocityY * t + 0.5 * p.gravity * t * t) * size.height;
+                    final opacity = t < 0.6 ? 1.0 : (1 - (t - 0.6) / 0.4).clamp(0.0, 1.0);
+
+                    return Positioned(
+                      left: x,
+                      top: y,
+                      child: Opacity(
+                        opacity: opacity,
+                        child: Transform.rotate(
+                          angle: p.rotationSpeed * t,
+                          child: Text(p.emoji, style: TextStyle(fontSize: p.size)),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+
+            // Main content
+            Center(
+              child: FadeTransition(
+                opacity: _contentOpacity,
+                child: ScaleTransition(
+                  scale: _contentScale,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🌟', style: TextStyle(fontSize: 90)),
+                        const SizedBox(height: 20),
+                        const Text(
+                          '참 잘했어!',
+                          style: TextStyle(
+                            fontSize: 38,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.textMain,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          widget.isLastStep
+                              ? '모두 완료! 정말 대단해! 🎊'
+                              : '다음 단계도 함께 해보자! 🌱',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSub,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 48),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 60,
+                          child: ElevatedButton(
+                            onPressed: widget.onReturn,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              '로드맵으로 돌아가기',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ConfettiParticle {
+  final String emoji;
+  final double startX;
+  final double startY;
+  final double velocityX;
+  final double velocityY;
+  final double gravity;
+  final double delay;
+  final double size;
+  final double rotationSpeed;
+
+  const _ConfettiParticle({
+    required this.emoji,
+    required this.startX,
+    required this.startY,
+    required this.velocityX,
+    required this.velocityY,
+    required this.gravity,
+    required this.delay,
+    required this.size,
+    required this.rotationSpeed,
+  });
 }
