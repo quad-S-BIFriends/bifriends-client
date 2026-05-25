@@ -109,36 +109,147 @@ class GrowthReport {
     );
   }
 
-  static GrowthReport mock() => const GrowthReport(
+  static GrowthReport mock() => mockHistory().first;
+
+  static List<GrowthReport> mockHistory() => const [
+    GrowthReport(
+      childName: '정우치치',
+      weekRange: '5월 17일 ~ 5월 23일',
+      summary:
+          '이번 주 정우치치는 수학에서 눈에 띄는 성장을 보여줬어요. '
+          '더하기 개념을 꾸준히 연습하며 자신감이 붙었고, 국어 독해에서도 이야기의 흐름을 파악하는 능력이 향상되었습니다. '
+          '스스로 문제를 풀어보려는 태도가 정말 훌륭했어요!',
+      pattern: LearningPattern(
+        studyDays: ['월', '화', '수', '금', '토'],
+        totalStudyCount: 15,
+      ),
+      subjects: [
+        SubjectReport(
+          name: '국어',
+          type: SubjectType.korean,
+          goodPoint:
+              '비 오는 날 학습을 통해 감각적 표현을 익히고 문장을 완성하는 능력이 향상되었어요.',
+          hardPoint: '더 다양한 어휘를 접할 수 있도록 독서를 권장해 주세요.',
+        ),
+        SubjectReport(
+          name: '수학',
+          type: SubjectType.math,
+          goodPoint:
+              '더하기 개념을 완벽히 이해하고 빠르게 계산하는 연습을 잘 해내고 있어요.',
+          hardPoint: null,
+        ),
+      ],
+    ),
+    GrowthReport(
+      childName: '정우치치',
+      weekRange: '5월 10일 ~ 5월 16일',
+      summary:
+          '정우치치가 이번 주에는 새로운 개념 학습에 도전하며 많은 노력을 기울였어요. '
+          '어려운 문제에도 포기하지 않고 끝까지 해결하려는 모습이 인상적이었습니다.',
+      pattern: LearningPattern(
+        studyDays: ['월', '수', '목', '토'],
+        totalStudyCount: 10,
+      ),
+      subjects: [
+        SubjectReport(
+          name: '국어',
+          type: SubjectType.korean,
+          goodPoint: '낱말 카드 학습을 통해 새로운 어휘를 착실히 쌓아가고 있어요.',
+          hardPoint: '문장 전체의 의미를 파악하는 연습이 더 필요해요.',
+        ),
+        SubjectReport(
+          name: '수학',
+          type: SubjectType.math,
+          goodPoint:
+              '도형 알기 단계를 완료하고 세모, 네모, 동그라미를 완벽하게 구분할 수 있게 되었어요.',
+          hardPoint: '집중 시간을 조금 더 늘려보면 좋겠어요.',
+        ),
+      ],
+    ),
+    GrowthReport(
+      childName: '정우치치',
+      weekRange: '5월 3일 ~ 5월 9일',
+      summary:
+          '꾸준한 학습 습관이 결실을 맺고 있어요. '
+          '정우치치는 매일 조금씩 성장하며 학습에 대한 흥미를 높여가고 있습니다.',
+      pattern: LearningPattern(
+        studyDays: ['화', '수', '금'],
+        totalStudyCount: 7,
+      ),
+      subjects: [
+        SubjectReport(
+          name: '국어',
+          type: SubjectType.korean,
+          goodPoint: '국어 1단계를 시작하며 첫 이야기를 즐겁게 읽어나가고 있어요.',
+          hardPoint: null,
+        ),
+        SubjectReport(
+          name: '수학',
+          type: SubjectType.math,
+          goodPoint:
+              '숫자 세기 1단계를 마쳤어요! 1부터 10까지 자신있게 셀 수 있게 되었습니다.',
+          hardPoint: null,
+        ),
+      ],
+    ),
+    GrowthReport(
+      childName: '정우치치',
+      weekRange: '4월 26일 ~ 5월 2일',
+      summary:
+          '이번 한 주 동안 정우치치는 자신의 감정을 들여다보고 솔직하게 표현하는 법을 배우며 마음의 키가 쑥쑥 자랐어요. '
+          '분노와 두려움이라는 어려운 감정을 만났을 때, 어떻게 마음을 다스리고 도움을 요청해야 하는지 진지하게 고민하는 모습이 참 기특했답니다. '
+          '비록 모든 활동을 다 완료하지는 못했지만, 매 순간 최선을 다해 참여하며 성장해 나가는 정우치치를 함께 응원해 주세요!',
+      pattern: LearningPattern(
+        studyDays: ['월', '화', '목', '토'],
+        totalStudyCount: 12,
+      ),
+      subjects: [
+        SubjectReport(
+          name: '국어',
+          type: SubjectType.korean,
+          goodPoint: '국어 1단계 학습을 시작하며 한글과 친해지는 과정을 차근차근 밟아나가고 있어요.',
+          hardPoint: '학습 빈도를 조금 더 높여서 꾸준히 문장을 읽고 이해하는 연습이 필요해 보여요.',
+        ),
+        SubjectReport(
+          name: '수학',
+          type: SubjectType.math,
+          goodPoint: '매일 주어지는 \'오늘의 문제\' 풀이에 도전하며 수학적 사고력을 기르고 있습니다.',
+          hardPoint: '어려운 문제가 나와도 포기하지 않고 끝까지 문제를 해결하려는 끈기가 조금 더 필요해요.',
+        ),
+        SubjectReport(
+          name: '관계 시나리오',
+          type: SubjectType.social,
+          goodPoint:
+              '\'머리끝까지 화가 난다\', \'심장이 콩닥콩닥\' 같은 풍부한 감정 표현을 익히고, '
+              '화가 날 때 숨을 깊게 마시는 건강한 대처법을 잘 이해하고 있어요.',
+          hardPoint: null,
+        ),
+      ],
+    ),
+  ];
+
+  // TODO: BE 연동 시 실제 최신 주차 데이터로 교체
+  static GrowthReport mockLatest() => const GrowthReport(
     childName: '정우치치',
-    weekRange: '4월 26일 ~ 5월 2일',
+    weekRange: '5월 24일 ~ 5월 30일',
     summary:
-        '이번 한 주 동안 정우치치는 자신의 감정을 들여다보고 솔직하게 표현하는 법을 배우며 마음의 키가 쑥쑥 자랐어요. '
-        '분노와 두려움이라는 어려운 감정을 만났을 때, 어떻게 마음을 다스리고 도움을 요청해야 하는지 진지하게 고민하는 모습이 참 기특했답니다. '
-        '비록 모든 활동을 다 완료하지는 못했지만, 매 순간 최선을 다해 참여하며 성장해 나가는 정우치치를 함께 응원해 주세요!',
+        '이번 주도 정우치치는 꾸준히 학습에 참여하고 있어요! '
+        '새로운 도전을 이어가며 성장하는 모습을 확인해보세요.',
     pattern: LearningPattern(
-      studyDays: ['월', '화', '목', '토'],
-      totalStudyCount: 12,
+      studyDays: ['월', '화', '수'],
+      totalStudyCount: 5,
     ),
     subjects: [
       SubjectReport(
         name: '국어',
         type: SubjectType.korean,
-        goodPoint: '국어 1단계 학습을 시작하며 한글과 친해지는 과정을 차근차근 밟아나가고 있어요.',
-        hardPoint: '학습 빈도를 조금 더 높여서 꾸준히 문장을 읽고 이해하는 연습이 필요해 보여요.',
+        goodPoint: '새로운 단원을 시작하며 적극적으로 참여하고 있어요.',
+        hardPoint: null,
       ),
       SubjectReport(
         name: '수학',
         type: SubjectType.math,
-        goodPoint: '매일 주어지는 \'오늘의 문제\' 풀이에 도전하며 수학적 사고력을 기르고 있습니다.',
-        hardPoint: '어려운 문제가 나와도 포기하지 않고 끝까지 문제를 해결하려는 끈기가 조금 더 필요해요.',
-      ),
-      SubjectReport(
-        name: '관계 시나리오',
-        type: SubjectType.social,
-        goodPoint:
-            '\'머리끝까지 화가 난다\', \'심장이 콩닥콩닥\' 같은 풍부한 감정 표현을 익히고, '
-            '화가 날 때 숨을 깊게 마시는 건강한 대처법을 잘 이해하고 있어요.',
+        goodPoint: '이번 주 수학 학습을 꾸준히 이어가고 있습니다.',
         hardPoint: null,
       ),
     ],
