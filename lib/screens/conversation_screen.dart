@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/chat_model.dart';
+import '../models/member_model.dart';
+import '../services/chat_service.dart';
+import '../services/member_service.dart';
 import '../services/stt_service.dart';
 import '../theme/app_colors.dart';
 
 class ConversationScreen extends StatefulWidget {
-  // TODO: BE 연동 시 실제 닉네임 전달
-  final String nickname;
-
-  const ConversationScreen({super.key, this.nickname = '정우치치'});
+  const ConversationScreen({super.key});
 
   @override
   State<ConversationScreen> createState() => _ConversationScreenState();
@@ -16,13 +16,19 @@ class ConversationScreen extends StatefulWidget {
 class _ConversationScreenState extends State<ConversationScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ChatService _chatService = ChatService();
+  final MemberService _memberService = MemberService();
+  final SttService _sttService = SttService();
+
+  Member? _member;
+  late String _sessionId;
   bool _isHistoryOpen = false;
   bool _isSessionsExpanded = false;
   bool _isListening = false;
   bool _isTranscribing = false;
-  final SttService _sttService = SttService();
+  bool _isLeoTyping = false;
 
-  // TODO: BE 연동 시 API로 교체
+  // TODO: BE 연동 시 세션 목록 API로 교체
   String _activeSessionId = 'session_1';
   final List<ChatSession> _sessions = [
     ChatSession(id: 'session_1', title: '안녕 카피바라!', createdAt: DateTime.now()),
@@ -38,7 +44,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
     ),
   ];
 
-  // TODO: BE 연동 시 세션별 메시지 로드로 교체 (_messages가 비어있으면 웰컴 화면 표시)
   List<ChatMessage> _messages = [];
 
   static const List<(String, String)> _quickReplies = [
@@ -49,11 +54,40 @@ class _ConversationScreenState extends State<ConversationScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _sessionId = ChatService.generateSessionId();
+    _fetchMember();
+  }
+
+  @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
     _sttService.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchMember() async {
+    try {
+      final member = await _memberService.getMe();
+      if (mounted) setState(() => _member = member);
+    } catch (_) {}
+  }
+
+  String get _welcomeGreeting {
+    final name = _member?.displayNickname ?? '친구';
+    return '$name${_vocativeParticle(name)}, 안녕! 👋\n오늘 어떤 이야기를 해볼까?';
+  }
+
+  ChatMessage _makeMessage(String idPrefix, String content, bool isUser) {
+    final now = DateTime.now();
+    return ChatMessage(
+      id: '${idPrefix}_${now.millisecondsSinceEpoch}',
+      content: content,
+      isUser: isUser,
+      timestamp: now,
+    );
   }
 
   Future<void> _toggleListening() async {
@@ -79,22 +113,51 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-    // TODO: BE 연동 시 AI 응답 API 호출
+    if (text.isEmpty || _isLeoTyping) return;
+
     setState(() {
-      _messages = [
-        ..._messages,
-        ChatMessage(
-          id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-          content: text,
-          isUser: true,
-          timestamp: DateTime.now(),
-        ),
-      ];
+      _messages.add(_makeMessage('msg', text, true));
+      _isLeoTyping = true;
     });
     _messageController.clear();
+    _scrollToBottom();
+
+    try {
+      final reply = await _chatService.sendMessage(
+        sessionId: _sessionId,
+        message: text,
+        nickname: _member?.displayNickname ?? '친구',
+        grade: _member?.displayGrade ?? 4,
+        interests: _member?.interests ?? [],
+      );
+
+      if (mounted && reply != null && reply.isNotEmpty) {
+        setState(() => _messages.add(_makeMessage('reply', reply, false)));
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _messages.add(_makeMessage(
+              'err',
+              '레오가 지금 답하기 어려워요 😅\n잠시 후 다시 말 걸어줘!',
+              false,
+            )));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLeoTyping = false);
+        _scrollToBottom();
+      }
+    }
+  }
+
+  void _sendQuickReply(String text) {
+    _messageController.text = text;
+    _sendMessage();
+  }
+
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -104,11 +167,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
         );
       }
     });
-  }
-
-  void _sendQuickReply(String text) {
-    _messageController.text = text;
-    _sendMessage();
   }
 
   // 받침 있으면 '아', 없으면 '야'
@@ -232,12 +290,51 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   Widget _buildMessagesList() {
-    if (_messages.isEmpty) return _buildWelcomeScreen();
+    if (_messages.isEmpty && !_isLeoTyping) return _buildWelcomeScreen();
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      itemCount: _messages.length,
-      itemBuilder: (context, index) => _buildMessageBubble(_messages[index]),
+      itemCount: _messages.length + (_isLeoTyping ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (_isLeoTyping && index == _messages.length) {
+          return _buildTypingIndicator();
+        }
+        return _buildMessageBubble(_messages[index]);
+      },
+    );
+  }
+
+  Widget _buildTypingIndicator() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomLeft: Radius.circular(4),
+            bottomRight: Radius.circular(18),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const SizedBox(
+          width: 24,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.primary,
+          ),
+        ),
+      ),
     );
   }
 
@@ -249,7 +346,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
           Image.asset('assets/images/leo_default.png', width: 96, height: 96),
           const SizedBox(height: 20),
           Text(
-            '${widget.nickname}${_vocativeParticle(widget.nickname)}, 안녕! 👋\n오늘 어떤 이야기를 해볼까?',
+            _welcomeGreeting,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 18,
@@ -479,9 +576,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  // TODO: BE 연동 시 새 세션 생성 API 호출
                   setState(() {
+                    _sessionId = ChatService.generateSessionId();
                     _messages = [];
+                    _isLeoTyping = false;
                     _isHistoryOpen = false;
                     _isSessionsExpanded = false;
                   });
