@@ -9,8 +9,7 @@ class TodoItem {
   final int? targetTabIndex;
   final TodoSource _source;
 
-  bool get isUserCreated =>
-      _source == TodoSource.USER || _source == TodoSource.AGENT;
+  bool get isUserCreated => _source == TodoSource.USER;
 
   TodoItem({
     this.id,
@@ -19,8 +18,8 @@ class TodoItem {
     required this.estimatedMinutes,
     this.isCompleted = false,
     this.targetTabIndex,
-    bool isUserCreated = false,
-  }) : _source = isUserCreated ? TodoSource.USER : TodoSource.SYSTEM;
+    TodoSource source = TodoSource.SYSTEM,
+  }) : _source = source;
 
   factory TodoItem.fromResponse(TodoResponse res) {
     return TodoItem(
@@ -30,8 +29,7 @@ class TodoItem {
       estimatedMinutes: (res.estimatedTimeSec / 60).ceil().clamp(1, 999),
       isCompleted: res.isCompleted,
       targetTabIndex: _tabIndexForType(res.type),
-      isUserCreated: res.source == TodoSource.USER ||
-          res.source == TodoSource.AGENT,
+      source: res.source,
     );
   }
 

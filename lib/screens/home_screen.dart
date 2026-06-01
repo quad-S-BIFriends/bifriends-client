@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../models/home_model.dart';
 import '../models/todo_model.dart';
 import '../widgets/falling_leaves.dart';
 import '../services/member_service.dart';
@@ -20,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _userName = '친구';
+  String _greetingMessage = '';
   String? _representativeItemType;
   int _consecutiveDays = 0;
   int _currentLevel = 1;
@@ -49,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _userName = home.member.nickname;
+          _greetingMessage = home.greeting.message;
           _consecutiveDays = home.stats.streakDays;
           _currentLevel = home.stats.level;
           _availablePool = home.stats.availablePool;
@@ -57,6 +60,13 @@ class _HomeScreenState extends State<HomeScreen> {
           _poolNeededForNextLevel = home.stats.poolNeededForNextLevel;
           _todos = home.todos.map(TodoItem.fromResponse).toList();
         });
+
+        final reward = home.attendance.reward;
+        if (home.attendance.isFirstAttendanceToday && reward != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _showAttendanceRewardDialog(reward);
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -84,10 +94,116 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _completeTodoSafely(TodoItem todo) async {
     try {
-      await _homeService.completeTodo(todo.id!);
+      final result = await _homeService.completeTodo(todo.id!);
+      if (mounted) {
+        final latestReward = result.allCompleteBonus ?? result.singleReward;
+        setState(() {
+          _availablePool = latestReward.availablePool;
+          _currentLevel = latestReward.levelAfter;
+        });
+        _showRewardSnackBar(result);
+        if (result.leveledUp) {
+          await _fetchHomeData();
+        }
+      }
     } catch (_) {
       if (mounted) setState(() => todo.isCompleted = false);
     }
+  }
+
+  void _showRewardSnackBar(TodoCompleteResult result) {
+    final totalEarned = result.singleReward.earnedPool +
+        (result.allCompleteBonus?.earnedPool ?? 0);
+    final message = result.allCompleteBonus != null
+        ? '할 일 완료! +$totalEarned 🌱 (전체 완료 보너스 포함!)'
+        : '할 일 완료! +$totalEarned 🌱';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        duration: const Duration(seconds: 2),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  void _showAttendanceRewardDialog(RewardResult reward) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('🎉', style: TextStyle(fontSize: 52)),
+              const SizedBox(height: 12),
+              const Text(
+                '출석 완료!',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMain,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '+${reward.earnedPool} 🌱 획득',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+              if (reward.leveledUp) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Lv.${reward.levelBefore} → Lv.${reward.levelAfter} 레벨업! 🎊',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    '확인',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _handleTodoTap(TodoItem todo) {
@@ -128,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
       title: title,
       emoji: '',
       estimatedMinutes: estimatedMinutes,
-      isUserCreated: true,
+      source: TodoSource.USER,
     );
     setState(() => _todos.add(localTodo));
 
@@ -157,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
       emoji: todo.emoji,
       estimatedMinutes: estimatedMinutes,
       isCompleted: todo.isCompleted,
-      isUserCreated: true,
+      source: TodoSource.USER,
     );
     setState(() => _todos[idx] = updated);
 
@@ -268,21 +384,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              RichText(
-                text: TextSpan(
-                  style: GoogleFonts.gaegu(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textSub,
-                  ),
-                  children: [
-                    const TextSpan(text: '안녕, '),
-                    TextSpan(
-                      text: _userName,
-                      style: const TextStyle(color: AppColors.primary),
-                    ),
-                    const TextSpan(text: '! 오늘도 반가워 🦫'),
-                  ],
+              Text(
+                _greetingMessage.isNotEmpty
+                    ? _greetingMessage
+                    : '안녕, $_userName! 오늘도 반가워 🦫',
+                style: GoogleFonts.gaegu(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSub,
                 ),
               ),
             ],
