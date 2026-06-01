@@ -2,7 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/learning_activity_screen.dart';
-import '../widgets/learning_roadmap.dart' show LevelData, LevelStatus, RoadmapPainter;
+import '../widgets/learning_roadmap.dart'
+    show LevelData, LevelStatus, RoadmapPainter;
 import '../theme/app_colors.dart';
 
 class _LevelDef {
@@ -51,8 +52,7 @@ class _KoreanLearningRoadmapState extends State<KoreanLearningRoadmap> {
     final prefs = await SharedPreferences.getInstance();
     final Map<int, int> cycles = {};
     for (final def in _koreanLevelDefs) {
-      cycles[def.level] =
-          prefs.getInt('korean_level_${def.level}_cycles') ?? 0;
+      cycles[def.level] = prefs.getInt('korean_level_${def.level}_cycles') ?? 0;
     }
     if (!mounted) return;
     setState(() {
