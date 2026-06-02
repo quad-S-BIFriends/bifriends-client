@@ -2,14 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 class SttService {
   final AudioRecorder _recorder = AudioRecorder();
 
-  // TODO: flutter_dotenv 등으로 환경변수 분리 예정
-  static const String _apiKey = 'AIzaSyDgwkx-_FTukhxECpDcS0vCNmZv3GaFqj4';
+  static String get _apiKey => dotenv.env['GOOGLE_STT_API_KEY'] ?? '';
 
   Future<bool> hasPermission() => _recorder.hasPermission();
 
