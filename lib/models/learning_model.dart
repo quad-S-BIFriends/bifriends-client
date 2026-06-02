@@ -126,7 +126,7 @@ class ChoiceQuestion {
 
   factory ChoiceQuestion.fromJson(Map<String, dynamic> json) {
     // Question text (may be a List of segments in grade 6 format)
-    final rich = _parseSpans(json['text'] ?? json['question_text'] ?? '');
+    final rich = _parseSpans(json['text'] ?? json['question_text'] ?? json['question'] ?? '');
 
     // Options: List<String> (grade 3) or List<{display, numerator, ...}> (grade 6)
     final rawOptions = (json['options'] as List?) ?? [];
@@ -219,7 +219,7 @@ class ShortAnswerQuestion {
       richHints ?? hints.map((h) => <RichSpan>[PlainSpan(h)]).toList();
 
   factory ShortAnswerQuestion.fromJson(Map<String, dynamic> json) {
-    final rich = _parseSpans(json['text'] ?? json['question_text'] ?? '');
+    final rich = _parseSpans(json['text'] ?? json['question_text'] ?? json['question'] ?? '');
 
     final rawAnswer = json['answer'];
     FractionValue? fracAns;
@@ -329,12 +329,12 @@ class LearningCycle {
               .toList()
           : null,
       choiceQuestions: type == CycleType.choice
-          ? (json['questions'] as List)
+          ? ((json['questions'] as List?) ?? [])
               .map((q) => ChoiceQuestion.fromJson(q as Map<String, dynamic>))
               .toList()
           : null,
       shortAnswerQuestions: type == CycleType.shortAnswer
-          ? (json['questions'] as List)
+          ? ((json['questions'] as List?) ?? [])
               .map((q) =>
                   ShortAnswerQuestion.fromJson(q as Map<String, dynamic>))
               .toList()
@@ -400,7 +400,7 @@ class StepSummaryResponse {
       stepTitle: json['stepTitle'] as String,
       concept: json['concept'] as String,
       status: status,
-      completedCycles: (json['completedCycles'] as List<dynamic>)
+      completedCycles: ((json['completedCycles'] as List<dynamic>?) ?? [])
           .map((e) => e as int)
           .toList(),
     );

@@ -408,7 +408,17 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   // ── Concept slide ─────────────────────────────────────────────────────────
 
   Widget _buildConceptSlide({required Key key}) {
-    final slide = _currentCycle.slides![_currentQuestionIdx];
+    final slides = _currentCycle.slides;
+    if (slides == null || slides.isEmpty) {
+      return Center(
+        key: key,
+        child: const Text(
+          '슬라이드 데이터를 불러올 수 없어요 😢',
+          style: TextStyle(fontSize: 16, color: AppColors.textSub),
+        ),
+      );
+    }
+    final slide = slides[_currentQuestionIdx];
     final conceptLabel = _currentCycle.type == CycleType.wordCard
         ? '낱말 카드'
         : '개념 이야기';
