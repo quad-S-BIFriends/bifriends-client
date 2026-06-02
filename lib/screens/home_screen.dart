@@ -112,7 +112,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showRewardSnackBar(TodoCompleteResult result) {
-    final totalEarned = result.singleReward.earnedPool +
+    final totalEarned =
+        result.singleReward.earnedPool +
         (result.allCompleteBonus?.earnedPool ?? 0);
     final message = result.allCompleteBonus != null
         ? '할 일 완료! +$totalEarned 🌱 (전체 완료 보너스 포함!)'
@@ -138,8 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
       barrierColor: Colors.black.withValues(alpha: 0.4),
       builder: (ctx) => Dialog(
         backgroundColor: Colors.white,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         insetPadding: const EdgeInsets.symmetric(horizontal: 40),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
@@ -265,7 +265,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _updateTodo(
-      TodoItem todo, String title, int estimatedMinutes) async {
+    TodoItem todo,
+    String title,
+    int estimatedMinutes,
+  ) async {
     final idx = _todos.indexOf(todo);
     final updated = TodoItem(
       id: todo.id,
@@ -371,30 +374,32 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Lv. $_currentLevel',
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.textMain,
-                  letterSpacing: -0.5,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Lv. $_currentLevel',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textMain,
+                    letterSpacing: -0.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _greetingMessage.isNotEmpty
-                    ? _greetingMessage
-                    : '안녕, $_userName! 오늘도 반가워 🦫',
-                style: GoogleFonts.gaegu(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSub,
+                const SizedBox(height: 8),
+                Text(
+                  _greetingMessage.isNotEmpty
+                      ? _greetingMessage
+                      : '안녕, $_userName! 오늘도 반가워 🦫',
+                  style: GoogleFonts.gaegu(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSub,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           IconButton(
             icon: const Icon(
@@ -654,7 +659,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => _showTodoSheet(),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(20),
@@ -798,9 +805,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Icon(
           icon,
           size: 18,
-          color: isDestructive
-              ? Colors.red.shade300
-              : AppColors.textSub,
+          color: isDestructive ? Colors.red.shade300 : AppColors.textSub,
         ),
       ),
     );
@@ -824,8 +829,9 @@ class _TodoSheetState extends State<_TodoSheet> {
   @override
   void initState() {
     super.initState();
-    _titleController =
-        TextEditingController(text: widget.existing?.title ?? '');
+    _titleController = TextEditingController(
+      text: widget.existing?.title ?? '',
+    );
     _minutes = widget.existing?.estimatedMinutes ?? 5;
   }
 
@@ -882,8 +888,10 @@ class _TodoSheetState extends State<_TodoSheet> {
                   hintText: '할 일을 입력해 주세요',
                   hintStyle: TextStyle(color: AppColors.textSub),
                   border: InputBorder.none,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   counterText: '',
                 ),
                 onChanged: (_) => setState(() {}),
@@ -905,9 +913,7 @@ class _TodoSheetState extends State<_TodoSheet> {
                 const Spacer(),
                 _StepperButton(
                   icon: Icons.remove,
-                  onTap: _minutes > 1
-                      ? () => setState(() => _minutes--)
-                      : null,
+                  onTap: _minutes > 1 ? () => setState(() => _minutes--) : null,
                 ),
                 SizedBox(
                   width: 52,
@@ -934,10 +940,8 @@ class _TodoSheetState extends State<_TodoSheet> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: canSave
-                    ? () => widget.onSave(
-                          _titleController.text.trim(),
-                          _minutes,
-                        )
+                    ? () =>
+                          widget.onSave(_titleController.text.trim(), _minutes)
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
