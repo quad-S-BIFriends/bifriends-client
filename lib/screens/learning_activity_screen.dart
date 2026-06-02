@@ -627,6 +627,13 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
   // ── Short answer question ─────────────────────────────────────────────────
 
+  String? _extractUnit(String questionText) {
+    if (questionText.contains('얼마')) return '원';
+    final match = RegExp(r'몇\s+(\S+?)(?:일까요|인가요|이에요|일까|인가)')
+        .firstMatch(questionText);
+    return match?.group(1);
+  }
+
   Widget _buildShortAnswerQuestion({required Key key}) {
     final q = _currentCycle.shortAnswerQuestions![_currentQuestionIdx];
 
@@ -668,44 +675,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
           if (q.fractionAnswer != null)
             _buildFractionAnswerInput(q.fractionAnswer!.unit)
           else
-            Center(
-              child: SizedBox(
-                width: 140,
-                child: TextField(
-                  controller: _answerController,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textMain,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '?',
-                    hintStyle: const TextStyle(color: Color(0xFFDCD5CA)),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFDCD5CA),
-                        width: 1,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: (_useApiValidation || _isCurrentAnswerCorrectLocal)
-                            ? AppColors.primary
-                            : const Color(0xFFF3C74B),
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            _buildTextAnswerInput(_extractUnit(q.questionText)),
           const SizedBox(height: 24),
           _buildHintPanel(q.hintSpans),
           const SizedBox(height: 8),
@@ -731,6 +701,64 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
           fontWeight: FontWeight.w700,
           color: AppColors.primary,
         ),
+      ),
+    );
+  }
+
+  Widget _buildTextAnswerInput(String? unit) {
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 120,
+            child: TextField(
+              controller: _answerController,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMain,
+              ),
+              decoration: InputDecoration(
+                hintText: '?',
+                hintStyle: const TextStyle(color: Color(0xFFDCD5CA)),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFDCD5CA),
+                    width: 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: (_useApiValidation || _isCurrentAnswerCorrectLocal)
+                        ? AppColors.primary
+                        : const Color(0xFFF3C74B),
+                    width: 2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (unit != null) ...[
+            const SizedBox(width: 10),
+            Text(
+              unit,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textMain,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
