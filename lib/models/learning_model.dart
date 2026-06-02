@@ -41,6 +41,7 @@ class FractionValue {
 List<RichSpan> _parseSpans(dynamic raw) {
   if (raw is String) return [PlainSpan(raw)];
   return (raw as List).map<RichSpan>((seg) {
+    if (seg is String) return PlainSpan(seg);
     final m = seg as Map<String, dynamic>;
     if (m['type'] == 'fraction') {
       return FractionSpan(
@@ -93,11 +94,11 @@ class ChoiceQuestion {
   final List<RichSpan>? richQuestionText;
   final List<String> options;
   final List<FractionValue>? fractionOptions;
-  final String answer;                  // key: "2/3" for fractions, plain text otherwise
+  final String? answer;                 // null when fetched from API (server strips it)
   final FractionValue? fractionAnswer;  // set when answer is a fraction
   final List<String> hints;
   final List<List<RichSpan>>? richHints;
-  final String explanation;
+  final String? explanation;            // null when fetched from API
   final List<RichSpan>? richExplanation;
   final int difficulty;
 
@@ -106,11 +107,11 @@ class ChoiceQuestion {
     this.richQuestionText,
     required this.options,
     this.fractionOptions,
-    required this.answer,
+    this.answer,
     this.fractionAnswer,
     required this.hints,
     this.richHints,
-    required this.explanation,
+    this.explanation,
     this.richExplanation,
     required this.difficulty,
   });
@@ -118,7 +119,8 @@ class ChoiceQuestion {
   List<RichSpan> get questionSpans => richQuestionText ?? [PlainSpan(questionText)];
   List<List<RichSpan>> get hintSpans =>
       richHints ?? hints.map((h) => <RichSpan>[PlainSpan(h)]).toList();
-  List<RichSpan> get explanationSpans => richExplanation ?? [PlainSpan(explanation)];
+  List<RichSpan> get explanationSpans =>
+      richExplanation ?? [PlainSpan(explanation ?? '')];
 
   factory ChoiceQuestion.fromJson(Map<String, dynamic> json) {
     // Question text (may be a List of segments in grade 6 format)
@@ -138,14 +140,14 @@ class ChoiceQuestion {
       strOpts = rawOptions.cast<String>();
     }
 
-    // Answer: String (grade 3) or {numerator, denominator, unit} (grade 6)
+    // Answer: nullable — server strips it from API responses
     final rawAnswer = json['answer'];
     FractionValue? fracAns;
-    String strAnswer;
+    String? strAnswer;
     if (rawAnswer is Map<String, dynamic>) {
       fracAns = FractionValue.fromJson(rawAnswer);
       strAnswer = fracAns.key;
-    } else {
+    } else if (rawAnswer != null) {
       strAnswer = rawAnswer as String;
     }
 
@@ -160,15 +162,15 @@ class ChoiceQuestion {
       strH = rawHints.cast<String>();
     }
 
-    // Explanation: String (grade 3) or List<segment> (grade 6)
+    // Explanation: String (grade 3) or List<segment> (grade 6) or null (API response)
     final rawExp = json['explanation'];
     List<RichSpan>? richExp;
-    String strExp;
+    String? strExp;
     if (rawExp is List) {
       richExp = _parseSpans(rawExp);
       strExp = _spansToString(richExp);
-    } else {
-      strExp = rawExp as String? ?? '';
+    } else if (rawExp != null) {
+      strExp = rawExp as String;
     }
 
     return ChoiceQuestion(
@@ -190,22 +192,22 @@ class ChoiceQuestion {
 class ShortAnswerQuestion {
   final String questionText;
   final List<RichSpan>? richQuestionText;
-  final String answer;                  // "557" for text, "11/8" for fractions
+  final String? answer;                 // null when fetched from API (server strips it)
   final FractionValue? fractionAnswer;  // set when answer is a fraction
   final List<String> hints;
   final List<List<RichSpan>>? richHints;
-  final String explanation;
+  final String? explanation;            // null when fetched from API
   final List<RichSpan>? richExplanation;
   final int difficulty;
 
   const ShortAnswerQuestion({
     required this.questionText,
     this.richQuestionText,
-    required this.answer,
+    this.answer,
     this.fractionAnswer,
     required this.hints,
     this.richHints,
-    required this.explanation,
+    this.explanation,
     this.richExplanation,
     required this.difficulty,
   });
@@ -219,11 +221,11 @@ class ShortAnswerQuestion {
 
     final rawAnswer = json['answer'];
     FractionValue? fracAns;
-    String strAnswer;
+    String? strAnswer;
     if (rawAnswer is Map<String, dynamic>) {
       fracAns = FractionValue.fromJson(rawAnswer);
       strAnswer = fracAns.key;
-    } else {
+    } else if (rawAnswer != null) {
       strAnswer = rawAnswer as String;
     }
 
@@ -239,12 +241,12 @@ class ShortAnswerQuestion {
 
     final rawExp = json['explanation'];
     List<RichSpan>? richExp;
-    String strExp;
+    String? strExp;
     if (rawExp is List) {
       richExp = _parseSpans(rawExp);
       strExp = _spansToString(richExp);
-    } else {
-      strExp = rawExp as String? ?? '';
+    } else if (rawExp != null) {
+      strExp = rawExp as String;
     }
 
     return ShortAnswerQuestion(
@@ -344,6 +346,166 @@ class LearningStep {
             .map((c) => LearningCycle.fromJson(c as Map<String, dynamic>))
             .toList(),
       );
+}
+
+// ── API response models ────────────────────────────────────────────────────
+
+// ignore: constant_identifier_names
+enum StepStatus { AVAILABLE, IN_PROGRESS, COMPLETED, LOCKED }
+
+class StepSummaryResponse {
+  final int stepId;
+  final int stepNumber;
+  final String stepTitle;
+  final String concept;
+  final StepStatus status;
+  final List<int> completedCycles;
+
+  const StepSummaryResponse({
+    required this.stepId,
+    required this.stepNumber,
+    required this.stepTitle,
+    required this.concept,
+    required this.status,
+    required this.completedCycles,
+  });
+
+  factory StepSummaryResponse.fromJson(Map<String, dynamic> json) {
+    final statusStr = json['status'] as String? ?? 'LOCKED';
+    final status = StepStatus.values.firstWhere(
+      (e) => e.name == statusStr,
+      orElse: () => StepStatus.LOCKED,
+    );
+    return StepSummaryResponse(
+      stepId: json['stepId'] as int,
+      stepNumber: json['stepNumber'] as int,
+      stepTitle: json['stepTitle'] as String,
+      concept: json['concept'] as String,
+      status: status,
+      completedCycles: (json['completedCycles'] as List<dynamic>)
+          .map((e) => e as int)
+          .toList(),
+    );
+  }
+}
+
+class RoadmapResponse {
+  final int grade;
+  final int? lastStepId;
+  final List<StepSummaryResponse> steps;
+
+  const RoadmapResponse({
+    required this.grade,
+    this.lastStepId,
+    required this.steps,
+  });
+
+  factory RoadmapResponse.fromJson(Map<String, dynamic> json) {
+    return RoadmapResponse(
+      grade: json['grade'] as int,
+      lastStepId: json['lastStepId'] as int?,
+      steps: (json['steps'] as List<dynamic>)
+          .map((e) => StepSummaryResponse.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class StepContentResponse {
+  final int stepId;
+  final String stepTitle;
+  final String concept;
+  final int grade;
+  final List<LearningCycle> cycles;
+
+  const StepContentResponse({
+    required this.stepId,
+    required this.stepTitle,
+    required this.concept,
+    required this.grade,
+    required this.cycles,
+  });
+
+  factory StepContentResponse.fromJson(Map<String, dynamic> json) {
+    return StepContentResponse(
+      stepId: json['stepId'] as int,
+      stepTitle: json['stepTitle'] as String,
+      concept: json['concept'] as String,
+      grade: json['grade'] as int,
+      cycles: (json['cycles'] as List<dynamic>)
+          .map((e) => LearningCycle.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class ValidateResponse {
+  final bool correct;
+  final dynamic explanation;
+
+  const ValidateResponse({required this.correct, this.explanation});
+
+  factory ValidateResponse.fromJson(Map<String, dynamic> json) {
+    return ValidateResponse(
+      correct: json['correct'] as bool,
+      explanation: json['explanation'],
+    );
+  }
+}
+
+class CycleCompleteResponse {
+  final int stepId;
+  final int cycleNumber;
+  final List<int> completedCycles;
+  final bool isStepCompleted;
+
+  const CycleCompleteResponse({
+    required this.stepId,
+    required this.cycleNumber,
+    required this.completedCycles,
+    required this.isStepCompleted,
+  });
+
+  factory CycleCompleteResponse.fromJson(Map<String, dynamic> json) {
+    return CycleCompleteResponse(
+      stepId: json['stepId'] as int,
+      cycleNumber: json['cycleNumber'] as int,
+      completedCycles: (json['completedCycles'] as List<dynamic>)
+          .map((e) => e as int)
+          .toList(),
+      isStepCompleted: json['isStepCompleted'] as bool,
+    );
+  }
+}
+
+class StepCompleteResponse {
+  final int stepId;
+  final bool isStepCompleted;
+  final int? nextStepId;
+  final StepStatus? nextStepStatus;
+
+  const StepCompleteResponse({
+    required this.stepId,
+    required this.isStepCompleted,
+    this.nextStepId,
+    this.nextStepStatus,
+  });
+
+  factory StepCompleteResponse.fromJson(Map<String, dynamic> json) {
+    final statusStr = json['nextStepStatus'] as String?;
+    final nextStepStatus = statusStr != null
+        ? StepStatus.values.firstWhere(
+            (e) => e.name == statusStr,
+            orElse: () => StepStatus.AVAILABLE,
+          )
+        : null;
+    return StepCompleteResponse(
+      stepId: json['stepId'] as int,
+      isStepCompleted: json['isStepCompleted'] as bool,
+      nextStepId: json['nextStepId'] as int?,
+      nextStepStatus: nextStepStatus,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

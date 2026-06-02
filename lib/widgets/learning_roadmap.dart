@@ -1,41 +1,32 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../models/learning_model.dart';
 import '../screens/learning_activity_screen.dart';
+import '../services/math_learning_service.dart';
 import '../theme/app_colors.dart';
 
 enum LevelStatus { completed, current, locked }
 
 class LevelData {
   final int level;
+  final int stepId;
   final String title;
   final String description;
+  final String subtitle;
   final LevelStatus status;
+  final List<int> completedCycles;
 
   LevelData({
     required this.level,
+    this.stepId = 0,
     required this.title,
     required this.description,
+    this.subtitle = '',
     required this.status,
+    this.completedCycles = const [],
   });
 }
-
-class _LevelDef {
-  final int level;
-  final String cardTitle;
-  final String name;
-  final String subtitle;
-  const _LevelDef(this.level, this.cardTitle, this.name, this.subtitle);
-}
-
-const List<_LevelDef> _mathLevelDefs = [
-  _LevelDef(1, 'LEVEL 1', '숫자 세기', '1부터 10까지 세어봐요'),
-  _LevelDef(2, 'LEVEL 2', '도형 알기', '세모 네모 동그라미를 찾아요'),
-  _LevelDef(3, 'LEVEL 3', '더하기', '합치면 몇 개가 될까요?'),
-  _LevelDef(4, 'LEVEL 4', '빼기', '빼면 몇 개가 남을까요?'),
-  _LevelDef(5, 'LEVEL 5', '크기 비교', '어느 쪽이 더 클까요?'),
-];
 
 // Dots per level = total cycles per level.
 // Completing each cycle fills one dot; all filled → level complete.
@@ -49,10 +40,10 @@ class LearningRoadmap extends StatefulWidget {
 }
 
 class _LearningRoadmapState extends State<LearningRoadmap> {
-  // level → number of completed cycles (0 … _cyclesPerLevel)
-  Map<int, int> _completedCycles = {};
+  List<StepSummaryResponse> _steps = [];
   bool _loaded = false;
   final ScrollController _scrollController = ScrollController();
+  final MathLearningService _service = MathLearningService();
 
   @override
   void initState() {
@@ -67,33 +58,20 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
   }
 
   Future<void> _loadProgress() async {
-    final prefs = await SharedPreferences.getInstance();
-    final Map<int, int> cycles = {};
-    for (final def in _mathLevelDefs) {
-      cycles[def.level] = prefs.getInt('math_level_${def.level}_cycles') ?? 0;
+    try {
+      final roadmap = await _service.getRoadmap();
+      if (!mounted) return;
+      setState(() {
+        _steps = roadmap.steps;
+        _loaded = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loaded = true);
     }
-    // First-time default: levels 1 and 2 already completed
-    if (!prefs.containsKey('math_level_1_cycles')) {
-      cycles[1] = _cyclesPerLevel;
-      cycles[2] = _cyclesPerLevel;
-    }
-    if (!mounted) return;
-    setState(() {
-      _completedCycles = cycles;
-      _loaded = true;
-    });
-    // LRN_MATH_06: scroll to current level on re-entry
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _scrollToCurrentLevel(),
     );
-  }
-
-  Future<void> _markCycleCompleted(int level) async {
-    if (!mounted) return;
-    final next = (_completedCycles[level] ?? 0) + 1;
-    setState(() => _completedCycles[level] = next);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('math_level_${level}_cycles', next);
   }
 
   void _scrollToCurrentLevel() {
@@ -114,22 +92,28 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
     );
   }
 
-  bool _isLevelComplete(int level) =>
-      (_completedCycles[level] ?? 0) >= _cyclesPerLevel;
-
-  LevelStatus _statusFor(int level) {
-    if (_isLevelComplete(level)) return LevelStatus.completed;
-    if (level == 1 || _isLevelComplete(level - 1)) return LevelStatus.current;
-    return LevelStatus.locked;
+  LevelStatus _levelStatusFrom(StepStatus status) {
+    switch (status) {
+      case StepStatus.COMPLETED:
+        return LevelStatus.completed;
+      case StepStatus.IN_PROGRESS:
+      case StepStatus.AVAILABLE:
+        return LevelStatus.current;
+      case StepStatus.LOCKED:
+        return LevelStatus.locked;
+    }
   }
 
-  List<LevelData> get _levelDatas => _mathLevelDefs
+  List<LevelData> get _levelDatas => _steps
       .map(
-        (d) => LevelData(
-          level: d.level,
-          title: d.cardTitle,
-          description: d.name,
-          status: _statusFor(d.level),
+        (s) => LevelData(
+          level: s.stepNumber,
+          stepId: s.stepId,
+          title: 'STEP ${s.stepNumber}',
+          description: s.stepTitle,
+          subtitle: s.concept,
+          status: _levelStatusFrom(s.status),
+          completedCycles: s.completedCycles,
         ),
       )
       .toList();
@@ -140,25 +124,39 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    final levelDatas = _levelDatas;
+
+    if (levelDatas.isEmpty) {
+      return const Center(
+        child: Text(
+          '로드맵을 불러올 수 없어요 😢\n잠시 후 다시 시도해줘!',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSub,
+            height: 1.6,
+          ),
+        ),
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final sw = constraints.maxWidth;
         const nodeHeight = 190.0;
         const circleAreaSize = 130.0;
         const gap = 14.0;
-        // Card width: enough room from circle edge to screen edge with 16px margin
         final cardWidth = (sw * 0.7 - 80).clamp(130.0, 185.0);
-        final totalHeight = _mathLevelDefs.length * nodeHeight + 80.0;
+        final totalHeight = levelDatas.length * nodeHeight + 80.0;
 
         final centers = <Offset>[];
-        for (int i = 0; i < _mathLevelDefs.length; i++) {
+        for (int i = 0; i < levelDatas.length; i++) {
           final isLeft = i % 2 == 0;
           final x = isLeft ? sw * 0.30 : sw * 0.70;
           final y = 60.0 + i * nodeHeight;
           centers.add(Offset(x, y));
         }
-
-        final levelDatas = _levelDatas;
 
         return SingleChildScrollView(
           controller: _scrollController,
@@ -177,18 +175,14 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
                     ),
                   ),
                 ),
-                for (int i = 0; i < _mathLevelDefs.length; i++)
+                for (int i = 0; i < levelDatas.length; i++)
                   Positioned(
-                    // Row left edge: for left node, align row so circle center = centers[i].dx
-                    // for right node, card is first, so shift left by card+gap+half-circle
                     left: (i % 2 == 0)
                         ? centers[i].dx - circleAreaSize / 2
                         : centers[i].dx - circleAreaSize / 2 - gap - cardWidth,
-                    // Center the 100px-tall circle vertically around centers[i].dy
                     top: centers[i].dy - circleAreaSize / 2,
                     child: _buildNodeRow(
                       levelDatas[i],
-                      def: _mathLevelDefs[i],
                       isLeft: i % 2 == 0,
                       cardWidth: cardWidth,
                       gap: gap,
@@ -204,34 +198,33 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
 
   Widget _buildNodeRow(
     LevelData level, {
-    required _LevelDef def,
     required bool isLeft,
     required double cardWidth,
     required double gap,
   }) {
     final isLocked = level.status == LevelStatus.locked;
     final circleWidget = _buildCircleWithDots(level);
-    final cardWidget = SizedBox(
-      width: cardWidth,
-      child: _buildCard(level, def: def),
-    );
+    final cardWidget = SizedBox(width: cardWidth, child: _buildCard(level));
 
     return GestureDetector(
       onTap: isLocked
           ? null
-          : () {
-              final completedCycles = _completedCycles[level.level] ?? 0;
-              final initialStep = _isLevelComplete(level.level)
-                  ? 1 // 완료 레벨은 처음부터 복습하도록 함.
-                  : (completedCycles + 1).clamp(1, 5);
-              Navigator.push(
+          : () async {
+              final isComplete = level.status == LevelStatus.completed;
+              final initialStep = isComplete
+                  ? 1
+                  : (level.completedCycles.length + 1).clamp(
+                      1,
+                      _cyclesPerLevel,
+                    );
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => LearningActivityScreen(
                     levelData: level,
                     initialStep: initialStep,
-                    onStepCompleted: level.status == LevelStatus.current
-                        ? () => _markCycleCompleted(level.level)
+                    onStepCompleted: level.status != LevelStatus.locked
+                        ? _loadProgress
                         : null,
                   ),
                 ),
@@ -275,10 +268,9 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
     final isCurrent = level.status == LevelStatus.current;
     final isLocked = level.status == LevelStatus.locked;
 
-    // How many dots are filled: all for completed, counted for current, none for locked
     final filledCount = isCompleted
         ? _cyclesPerLevel
-        : (_completedCycles[level.level] ?? 0);
+        : level.completedCycles.length;
 
     final Color borderColor = isCompleted || isCurrent
         ? AppColors.primary
@@ -371,7 +363,7 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
     );
   }
 
-  Widget _buildCard(LevelData level, {required _LevelDef def}) {
+  Widget _buildCard(LevelData level) {
     final isLocked = level.status == LevelStatus.locked;
     final labelColor = isLocked ? AppColors.textSub : const Color(0xFFF07D4F);
     final titleColor = isLocked ? AppColors.textSub : AppColors.textMain;
@@ -396,7 +388,7 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            def.cardTitle,
+            level.title,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
@@ -405,22 +397,24 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
           ),
           const SizedBox(height: 3),
           Text(
-            def.name,
+            level.description,
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w800,
               color: titleColor,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            def.subtitle,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSub,
+          if (level.subtitle.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              level.subtitle,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSub,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

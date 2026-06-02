@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/learning_model.dart';
+import '../services/math_learning_service.dart';
 import '../widgets/learning_roadmap.dart' show LevelData;
 import '../widgets/rich_inline_text.dart';
 import '../theme/app_colors.dart';
@@ -24,7 +25,8 @@ class LearningActivityScreen extends StatefulWidget {
 }
 
 class _LearningActivityScreenState extends State<LearningActivityScreen> {
-  late LearningStep _step;
+  LearningStep? _step;
+  bool _contentLoading = true;
   late int _currentCycleIdx;
   int _currentQuestionIdx = 0;
   int _hintsShown = 0;
@@ -32,24 +34,55 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   bool _showWrongFeedback = false;
   bool _showSuccessOverlay = false;
   bool _isLastStepCompleted = false;
+  bool _isValidating = false;
   late TextEditingController _answerController;
-  late TextEditingController
-  _denominatorController; // used for fraction short-answer
+  late TextEditingController _denominatorController;
+
+  final MathLearningService _mathService = MathLearningService();
+
+  bool _useApiValidation = false;
 
   @override
   void initState() {
     super.initState();
-    _step = widget.subject == 'korean'
-        ? mockKoreanStepForLevel(widget.levelData.level)
-        : mockStepForLevel(widget.levelData.level);
-    _currentCycleIdx = (widget.initialStep - 1).clamp(
-      0,
-      _step.cycles.length - 1,
-    );
+    _currentCycleIdx = (widget.initialStep - 1).clamp(0, 99);
     _answerController = TextEditingController();
     _answerController.addListener(() => setState(() {}));
     _denominatorController = TextEditingController();
     _denominatorController.addListener(() => setState(() {}));
+    _loadContent();
+  }
+
+  Future<void> _loadContent() async {
+    LearningStep step;
+    if (widget.subject == 'math' && widget.levelData.stepId > 0) {
+      try {
+        final content =
+            await _mathService.getStepContent(widget.levelData.stepId);
+        step = LearningStep(
+          stepId: content.stepId.toString(),
+          stepTitle: content.stepTitle,
+          stepDescription: content.concept,
+          cycles: content.cycles,
+        );
+        _useApiValidation = true;
+      } catch (_) {
+        step = mockStepForLevel(widget.levelData.level);
+        _useApiValidation = false;
+      }
+    } else {
+      step = widget.subject == 'korean'
+          ? mockKoreanStepForLevel(widget.levelData.level)
+          : mockStepForLevel(widget.levelData.level);
+      _useApiValidation = false;
+    }
+    if (!mounted) return;
+    setState(() {
+      _step = step;
+      _currentCycleIdx =
+          (widget.initialStep - 1).clamp(0, step.cycles.length - 1);
+      _contentLoading = false;
+    });
   }
 
   @override
@@ -59,13 +92,14 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
     super.dispose();
   }
 
-  LearningCycle get _currentCycle => _step.cycles[_currentCycleIdx];
-  int get _totalCycles => _step.cycles.length;
+  LearningCycle get _currentCycle => _step!.cycles[_currentCycleIdx];
+  int get _totalCycles => _step!.cycles.length;
   bool get _isLastCycle => _currentCycleIdx >= _totalCycles - 1;
   bool get _isLastQuestion =>
       _currentQuestionIdx >= _currentCycle.questionCount - 1;
 
-  bool get _isCurrentAnswerCorrect {
+  // Only used for Korean / mock data local validation
+  bool get _isCurrentAnswerCorrectLocal {
     switch (_currentCycle.type) {
       case CycleType.concept:
         return true;
@@ -85,6 +119,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   }
 
   bool get _canProceed {
+    if (_isValidating) return false;
     switch (_currentCycle.type) {
       case CycleType.concept:
         return true;
@@ -95,10 +130,12 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
         if (q.fractionAnswer != null) {
           final num = int.tryParse(_answerController.text.trim());
           final den = int.tryParse(_denominatorController.text.trim());
-          return num != null && den != null && _isCurrentAnswerCorrect;
+          if (_useApiValidation) return num != null && den != null;
+          return num != null && den != null && _isCurrentAnswerCorrectLocal;
         }
+        if (_useApiValidation) return _answerController.text.trim().isNotEmpty;
         return _answerController.text.trim().isNotEmpty &&
-            _isCurrentAnswerCorrect;
+            _isCurrentAnswerCorrectLocal;
     }
   }
 
@@ -111,15 +148,29 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   }
 
   void _onChoiceTap(String option) {
-    if (_showWrongFeedback) return;
+    if (_showWrongFeedback || _isValidating) return;
     setState(() => _selectedChoice = option);
   }
 
-  void _onConfirm() {
+  Future<void> _onConfirm() async {
     if (!_canProceed) return;
     FocusScope.of(context).unfocus();
 
-    if (_currentCycle.type == CycleType.choice && !_isCurrentAnswerCorrect) {
+    if (_currentCycle.type == CycleType.concept) {
+      _advanceContent();
+      return;
+    }
+
+    if (_useApiValidation) {
+      await _onConfirmWithApi();
+    } else {
+      _onConfirmLocal();
+    }
+  }
+
+  void _onConfirmLocal() {
+    if (!_isCurrentAnswerCorrectLocal &&
+        _currentCycle.type == CycleType.choice) {
       setState(() => _showWrongFeedback = true);
       Future.delayed(const Duration(milliseconds: 700), () {
         if (mounted) {
@@ -131,15 +182,80 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
       });
       return;
     }
+    _advanceContent();
+  }
 
+  Future<void> _onConfirmWithApi() async {
+    setState(() => _isValidating = true);
+    try {
+      dynamic answer;
+      if (_currentCycle.type == CycleType.choice) {
+        answer = _selectedChoice;
+      } else {
+        final q = _currentCycle.shortAnswerQuestions![_currentQuestionIdx];
+        if (q.fractionAnswer != null) {
+          answer = {
+            'numerator': int.parse(_answerController.text.trim()),
+            'denominator': int.parse(_denominatorController.text.trim()),
+          };
+        } else {
+          answer = _answerController.text.trim();
+        }
+      }
+
+      final result = await _mathService.validateAnswer(
+        stepId: widget.levelData.stepId,
+        cycleNumber: _currentCycleIdx + 1,
+        questionIndex: _currentQuestionIdx,
+        answer: answer,
+      );
+
+      if (!mounted) return;
+      setState(() => _isValidating = false);
+
+      if (!result.correct) {
+        setState(() => _showWrongFeedback = true);
+        Future.delayed(const Duration(milliseconds: 700), () {
+          if (mounted) {
+            setState(() {
+              _showWrongFeedback = false;
+              _selectedChoice = null;
+            });
+          }
+        });
+        return;
+      }
+      _advanceContent();
+    } catch (_) {
+      if (mounted) setState(() => _isValidating = false);
+    }
+  }
+
+  void _advanceContent() {
     if (!_isLastQuestion) {
       setState(() {
         _currentQuestionIdx++;
         _resetQuestionState();
       });
     } else {
-      // Step (cycle) complete — mark progress and show celebration
-      widget.onStepCompleted?.call();
+      _completeCycleAndShow();
+    }
+  }
+
+  Future<void> _completeCycleAndShow() async {
+    if (_useApiValidation) {
+      try {
+        final cycleResult = await _mathService.completeCycle(
+          stepId: widget.levelData.stepId,
+          cycleNumber: _currentCycleIdx + 1,
+        );
+        if (_isLastCycle && cycleResult.isStepCompleted) {
+          await _mathService.completeStep(widget.levelData.stepId);
+        }
+      } catch (_) {}
+    }
+    widget.onStepCompleted?.call();
+    if (mounted) {
       setState(() {
         _isLastStepCompleted = _isLastCycle;
         _showSuccessOverlay = true;
@@ -149,6 +265,11 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_contentLoading || _step == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Stack(
@@ -344,13 +465,13 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
           if (q.fractionOptions != null)
             Column(
               children: q.fractionOptions!
-                  .map((f) => _buildFractionChoiceOption(f, q.answer))
+                  .map((f) => _buildFractionChoiceOption(f, q.answer ?? ''))
                   .toList(),
             )
           else
             Column(
               children: q.options
-                  .map((opt) => _buildChoiceOption(opt, q.answer))
+                  .map((opt) => _buildChoiceOption(opt, q.answer ?? ''))
                   .toList(),
             ),
           const SizedBox(height: 16),
@@ -575,7 +696,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: _isCurrentAnswerCorrect
+                        color: (_useApiValidation || _isCurrentAnswerCorrectLocal)
                             ? AppColors.primary
                             : const Color(0xFFF3C74B),
                         width: 2,
@@ -628,7 +749,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(
-          color: _isCurrentAnswerCorrect
+          color: (_useApiValidation || _isCurrentAnswerCorrectLocal)
               ? AppColors.primary
               : const Color(0xFFF3C74B),
           width: 2,
