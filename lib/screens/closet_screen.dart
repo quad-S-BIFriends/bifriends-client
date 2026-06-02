@@ -280,7 +280,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final pillWidth = (constraints.maxWidth - 8) / 2;
+          final pillWidth = (constraints.maxWidth - 10) / 2;
           return Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
