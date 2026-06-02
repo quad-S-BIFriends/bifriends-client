@@ -5,6 +5,9 @@ import '../services/chat_service.dart';
 import '../services/member_service.dart';
 import '../services/stt_service.dart';
 import '../theme/app_colors.dart';
+import '../screens/learning_activity_screen.dart';
+import '../widgets/korean_learning_roadmap.dart';
+import '../widgets/learning_roadmap.dart' show LevelData, LevelStatus;
 
 class ConversationScreen extends StatefulWidget {
   const ConversationScreen({super.key});
@@ -80,13 +83,21 @@ class _ConversationScreenState extends State<ConversationScreen> {
     return '$name${_vocativeParticle(name)}, 안녕! 👋\n오늘 어떤 이야기를 해볼까?';
   }
 
-  ChatMessage _makeMessage(String idPrefix, String content, bool isUser) {
+  ChatMessage _makeMessage(
+    String idPrefix,
+    String content,
+    bool isUser, {
+    CtaAction? cta,
+    List<TodoCreated> todosCreated = const [],
+  }) {
     final now = DateTime.now();
     return ChatMessage(
       id: '${idPrefix}_${now.millisecondsSinceEpoch}',
       content: content,
       isUser: isUser,
       timestamp: now,
+      cta: cta,
+      todosCreated: todosCreated,
     );
   }
 
@@ -125,7 +136,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     _scrollToBottom();
 
     try {
-      final reply = await _chatService.sendMessage(
+      final chatResponse = await _chatService.sendMessage(
         sessionId: _sessionId,
         message: text,
         nickname: _member?.displayNickname ?? '친구',
@@ -133,8 +144,17 @@ class _ConversationScreenState extends State<ConversationScreen> {
         interests: _member?.interests ?? [],
       );
 
-      if (mounted && reply != null && reply.isNotEmpty) {
-        setState(() => _messages.add(_makeMessage('reply', reply, false)));
+      if (mounted && chatResponse.reply.isNotEmpty) {
+        setState(() => _messages.add(_makeMessage(
+              'reply',
+              chatResponse.reply,
+              false,
+              cta: chatResponse.cta,
+              todosCreated: chatResponse.todosCreated,
+            )));
+        if (chatResponse.todosCreated.isNotEmpty) {
+          _showTodosSnackbar(chatResponse.todosCreated);
+        }
       }
     } catch (_) {
       if (mounted) {
@@ -177,23 +197,18 @@ class _ConversationScreenState extends State<ConversationScreen> {
     return (code - 0xAC00) % 28 == 0 ? '야' : '아';
   }
 
-  // TODO: BE 연동 시 제거 — 세션 ID로 실제 메시지 로드
-  List<ChatMessage> _mockMessagesForSession(String sessionId) {
-    final title = _sessions.firstWhere((s) => s.id == sessionId).title;
-    return [
-      ChatMessage(
-        id: '${sessionId}_1',
-        content: '안녕! 나랑 이야기할래?\n오늘 기분은 어때?',
-        isUser: false,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
-      ),
-      ChatMessage(
-        id: '${sessionId}_2',
-        content: title,
-        isUser: true,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 8)),
-      ),
-    ];
+  Future<void> _loadSessionMessages(String sessionId) async {
+    setState(() {
+      _activeSessionId = sessionId;
+      _messages = [];
+      _isLeoTyping = false;
+      _isHistoryOpen = false;
+      _isSessionsExpanded = false;
+    });
+    try {
+      final messages = await _chatService.getSessionMessages(sessionId);
+      if (mounted) setState(() => _messages = messages);
+    } catch (_) {}
   }
 
   @override
@@ -403,7 +418,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   Widget _buildMessageBubble(ChatMessage msg) {
     final isUser = msg.isUser;
-    return Align(
+    final bubble = Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
@@ -436,6 +451,105 @@ class _ConversationScreenState extends State<ConversationScreen> {
             height: 1.5,
           ),
         ),
+      ),
+    );
+
+    if (!isUser && msg.cta != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          bubble,
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 6),
+            child: _buildCtaButton(msg.cta!),
+          ),
+        ],
+      );
+    }
+    return bubble;
+  }
+
+  Widget _buildCtaButton(CtaAction cta) {
+    return GestureDetector(
+      onTap: () => _handleCtaTap(cta),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              cta.label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleCtaTap(CtaAction cta) {
+    if (cta.type == 'navigate_to_step') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LearningActivityScreen(
+            levelData: LevelData(
+              level: cta.stepId ?? 1,
+              stepId: cta.stepId ?? 1,
+              title: cta.label,
+              description: '',
+              subtitle: '',
+              status: LevelStatus.current,
+              completedCycles: const [],
+            ),
+            initialStep: cta.cycleNumber ?? 1,
+            subject: cta.subject,
+          ),
+        ),
+      );
+    } else if (cta.type == 'navigate_to_subject') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => Scaffold(
+            appBar: AppBar(
+              title: const Text('국어 공부방'),
+              backgroundColor: AppColors.background,
+              foregroundColor: AppColors.textMain,
+              elevation: 0,
+            ),
+            backgroundColor: AppColors.background,
+            body: const KoreanLearningRoadmap(),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _showTodosSnackbar(List<TodoCreated> todos) {
+    final text = todos.length == 1
+        ? '✅ "${todos.first.title}" 할 일이 추가됐어요!'
+        : '✅ 할 일 ${todos.length}개가 추가됐어요!';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: AppColors.textMain,
       ),
     );
   }
@@ -654,15 +768,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                         const SizedBox(height: 12),
                         ...pastSessions.map(
                           (session) => GestureDetector(
-                            onTap: () {
-                              // TODO: BE 연동 시 _mockMessagesForSession을 실제 API 로드로 교체
-                              setState(() {
-                                _activeSessionId = session.id;
-                                _messages = _mockMessagesForSession(session.id);
-                                _isHistoryOpen = false;
-                                _isSessionsExpanded = false;
-                              });
-                            },
+                            onTap: () => _loadSessionMessages(session.id),
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 4),
                               padding: const EdgeInsets.symmetric(

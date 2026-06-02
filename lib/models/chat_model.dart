@@ -1,22 +1,82 @@
+class CtaAction {
+  final String type;
+  final String label;
+  final int? stepId;
+  final int? cycleNumber;
+  final String subject;
+
+  const CtaAction({
+    required this.type,
+    required this.label,
+    this.stepId,
+    this.cycleNumber,
+    required this.subject,
+  });
+
+  static CtaAction? fromJson(Map<String, dynamic>? json) {
+    if (json == null) return null;
+    return CtaAction(
+      type: json['type'] as String,
+      label: json['label'] as String,
+      stepId: json['step_id'] as int?,
+      cycleNumber: json['cycle_number'] as int?,
+      subject: json['subject'] as String,
+    );
+  }
+}
+
+class TodoCreated {
+  final String title;
+  final String assignedDate;
+
+  const TodoCreated({required this.title, required this.assignedDate});
+
+  factory TodoCreated.fromJson(Map<String, dynamic> json) => TodoCreated(
+    title: json['title'] as String,
+    assignedDate: json['assigned_date'] as String,
+  );
+}
+
+class ChatResponse {
+  final String reply;
+  final CtaAction? cta;
+  final List<TodoCreated> todosCreated;
+
+  const ChatResponse({
+    required this.reply,
+    this.cta,
+    this.todosCreated = const [],
+  });
+
+  factory ChatResponse.fromJson(Map<String, dynamic> json) {
+    final rawTodos = json['todos_created'] as List<dynamic>?;
+    return ChatResponse(
+      reply: json['reply'] as String? ?? json['message'] as String? ?? '',
+      cta: CtaAction.fromJson(json['cta'] as Map<String, dynamic>?),
+      todosCreated: rawTodos
+              ?.map((e) => TodoCreated.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+}
+
 class ChatMessage {
   final String id;
   final String content;
   final bool isUser;
   final DateTime timestamp;
+  final CtaAction? cta;
+  final List<TodoCreated> todosCreated;
 
   const ChatMessage({
     required this.id,
     required this.content,
     required this.isUser,
     required this.timestamp,
+    this.cta,
+    this.todosCreated = const [],
   });
-
-  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
-    id: json['id'] as String,
-    content: json['content'] as String,
-    isUser: json['isUser'] as bool,
-    timestamp: DateTime.parse(json['timestamp'] as String),
-  );
 }
 
 class ChatSession {

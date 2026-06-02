@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
+import '../models/chat_model.dart';
 
 class ChatService {
   static String generateSessionId() {
@@ -27,7 +28,7 @@ class ChatService {
     };
   }
 
-  Future<String?> sendMessage({
+  Future<ChatResponse> sendMessage({
     required String sessionId,
     required String message,
     required String nickname,
@@ -50,9 +51,30 @@ class ChatService {
     );
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      return data['reply'] as String?;
+      return ChatResponse.fromJson(
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+      );
     }
     throw Exception('메시지 전송 실패: ${response.statusCode}');
+  }
+
+  Future<List<ChatMessage>> getSessionMessages(String sessionId) async {
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/chat/sessions/$sessionId/messages',
+    );
+    final response = await http.get(url, headers: await _getHeaders());
+    if (response.statusCode == 200) {
+      final data =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      return (data['messages'] as List<dynamic>)
+          .map((m) => ChatMessage(
+                id: (m['id'] as num).toString(),
+                content: m['content'] as String,
+                isUser: (m['role'] as String) == 'USER',
+                timestamp: DateTime.parse(m['createdAt'] as String),
+              ))
+          .toList();
+    }
+    throw Exception('세션 메시지 로드 실패: ${response.statusCode}');
   }
 }
