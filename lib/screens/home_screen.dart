@@ -8,6 +8,7 @@ import '../services/member_service.dart';
 import '../services/home_service.dart';
 import '../theme/app_colors.dart';
 import 'closet_screen.dart';
+import 'mode_selection_screen.dart';
 import 'my_info_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,7 +23,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _userName = '친구';
   String _greetingMessage = '';
-  String? _representativeItemType;
   int _consecutiveDays = 0;
   int _currentLevel = 1;
   int _availablePool = 0;
@@ -86,7 +86,6 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_userName == '친구') {
             _userName = member.nickname ?? member.name;
           }
-          _representativeItemType = member.representativeItemType;
         });
       }
     } catch (_) {}
@@ -320,28 +319,69 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _showModeSwitchDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        title: const Text(
+          '모드 변경',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textMain,
+          ),
+        ),
+        content: const Text(
+          '모드 선택 화면으로 이동할까요?',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSub,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              '취소',
+              style: TextStyle(
+                color: AppColors.textSub,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              '이동',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ModeSelectionScreen()),
+      );
+    }
+  }
+
   String _getCharacterImagePath() {
-    const imageMap = {
-      'GIFT_1': 'assets/images/leo_studying.png',
-      'GIFT_2': 'assets/images/leo_ribbon.png',
-      'GIFT_3': 'assets/images/leo_flower.png',
-      'GIFT_4': 'assets/images/leo_sunglasses.png',
-      'GIFT_5': 'assets/images/leo_dinosaur.png',
-      'GIFT_6': 'assets/images/leo_scientist.png',
-      'GIFT_7': 'assets/images/leo_singer.png',
-    };
-    return imageMap[_representativeItemType] ?? 'assets/images/leo_default.png';
+    return 'assets/images/leo_default.png';
   }
 
   void _navigateToCloset() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ClosetScreen(
-          initialAvailablePool: _availablePool,
-          initialRepresentativeItemType: _representativeItemType,
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => const ClosetScreen()),
     ).then((_) => _fetchData());
   }
 
@@ -401,15 +441,32 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(
-              Icons.settings_outlined,
-              color: AppColors.textSub,
-              size: 28,
-            ),
-            onPressed: _navigateToProfile,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.supervised_user_circle_outlined,
+                  color: AppColors.textSub,
+                  size: 26,
+                ),
+                onPressed: _showModeSwitchDialog,
+                tooltip: '모드 변경',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(
+                  Icons.settings_outlined,
+                  color: AppColors.textSub,
+                  size: 28,
+                ),
+                onPressed: _navigateToProfile,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
           ),
         ],
       ),
