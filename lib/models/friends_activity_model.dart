@@ -1,3 +1,35 @@
+enum Gender { boy, girl }
+
+extension GenderFallback on Gender {
+  // boy.png / girl.png — 전체 오류 화면용 캐릭터 이미지
+  String get errorImagePath => 'assets/images/fallback/$name.png';
+}
+
+// 6가지 감정 시나리오 — 각 폴더에 step1~step3-3.png 존재
+enum EmotionType {
+  gratitude('고마움'),
+  joy('기쁨'),
+  embarrassment('부끄러움'),
+  sadness('속상함'),
+  disappointment('실망'),
+  anger('화남');
+
+  const EmotionType(this.folderName);
+  final String folderName;
+
+  String get step1Path => 'assets/images/fallback/$folderName/step1.png';
+  String get step2Path => 'assets/images/fallback/$folderName/step2.png';
+  String panelPath(int panelIndex) =>
+      'assets/images/fallback/$folderName/step3-${panelIndex + 1}.png';
+
+  static EmotionType fromString(String value) {
+    return EmotionType.values.firstWhere(
+      (e) => e.folderName == value,
+      orElse: () => EmotionType.joy,
+    );
+  }
+}
+
 // ─── Step 1 ───────────────────────────────────────
 class FriendsExpressionData {
   final String emotionWord; // 감정 단어 e.g. "놀람"
@@ -239,6 +271,8 @@ class FriendsStep5Data {
 // ─── 전체 활동 데이터 ──────────────────────────────
 class FriendsActivityData {
   final String situationText;
+  final Gender gender;
+  final EmotionType emotionType;
   final FriendsExpressionData expression; // Step 1
   final FriendsStep2Data? step2;
   final FriendsStep3Data? step3;
@@ -247,6 +281,8 @@ class FriendsActivityData {
 
   const FriendsActivityData({
     required this.situationText,
+    required this.gender,
+    required this.emotionType,
     required this.expression,
     this.step2,
     this.step3,
@@ -257,6 +293,8 @@ class FriendsActivityData {
   factory FriendsActivityData.fromJson(Map<String, dynamic> json) {
     return FriendsActivityData(
       situationText: json['situationText'] as String,
+      gender: json['gender'] == 'girl' ? Gender.girl : Gender.boy,
+      emotionType: EmotionType.fromString(json['emotionType'] as String? ?? ''),
       expression: FriendsExpressionData.fromJson(
         json['expression'] as Map<String, dynamic>,
       ),
