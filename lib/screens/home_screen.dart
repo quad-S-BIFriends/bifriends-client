@@ -410,63 +410,62 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.only(left: 24.0, right: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Lv. $_currentLevel',
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.textMain,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _greetingMessage.isNotEmpty
-                      ? _greetingMessage
-                      : '안녕, $_userName! 오늘도 반가워 🦫',
-                  style: GoogleFonts.gaegu(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textSub,
-                  ),
-                ),
-              ],
-            ),
-          ),
           Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.supervised_user_circle_outlined,
-                  color: AppColors.textSub,
-                  size: 26,
+              Text(
+                'Lv. $_currentLevel',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textMain,
+                  letterSpacing: -0.5,
                 ),
-                onPressed: _showModeSwitchDialog,
-                tooltip: '모드 변경',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(
-                  Icons.settings_outlined,
-                  color: AppColors.textSub,
-                  size: 28,
-                ),
-                onPressed: _navigateToProfile,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.supervised_user_circle_outlined,
+                      color: AppColors.textSub,
+                      size: 26,
+                    ),
+                    onPressed: _showModeSwitchDialog,
+                    tooltip: '모드 변경',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.settings_outlined,
+                      color: AppColors.textSub,
+                      size: 28,
+                    ),
+                    onPressed: _navigateToProfile,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _greetingMessage.isNotEmpty
+                ? _greetingMessage
+                : '안녕, $_userName! 오늘도 반가워 🦫',
+            style: GoogleFonts.gaegu(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSub,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
