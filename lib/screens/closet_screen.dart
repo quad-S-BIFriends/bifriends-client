@@ -5,14 +5,7 @@ import '../services/closet_service.dart';
 import '../theme/app_colors.dart';
 
 class ClosetScreen extends StatefulWidget {
-  final int initialAvailablePool;
-  final String? initialRepresentativeItemType;
-
-  const ClosetScreen({
-    super.key,
-    required this.initialAvailablePool,
-    this.initialRepresentativeItemType,
-  });
+  const ClosetScreen({super.key});
 
   @override
   State<ClosetScreen> createState() => _ClosetScreenState();
@@ -21,8 +14,8 @@ class ClosetScreen extends StatefulWidget {
 class _ClosetScreenState extends State<ClosetScreen> {
   final _closetService = ClosetService();
 
-  late int _availablePool;
-  String? _equippedItemType;
+  int _availablePool = 0;
+  EquippedItems _equipped = const EquippedItems();
 
   List<ClosetItem> _myItems = [];
   List<ClosetItem> _shopItems = [];
@@ -33,8 +26,6 @@ class _ClosetScreenState extends State<ClosetScreen> {
   @override
   void initState() {
     super.initState();
-    _availablePool = widget.initialAvailablePool;
-    _equippedItemType = widget.initialRepresentativeItemType;
     _fetchItems();
   }
 
@@ -46,70 +37,59 @@ class _ClosetScreenState extends State<ClosetScreen> {
         _closetService.getShopItems(),
       ]);
       if (mounted) {
+        final myResult = results[0] as ({List<ClosetItem> items, EquippedItems equipped});
+        final shopResult = results[1] as ({List<ClosetItem> items, int availablePool});
         setState(() {
-          _myItems = _withOnboardingGift(results[0]);
-          _shopItems = results[1];
+          _myItems = myResult.items;
+          _equipped = myResult.equipped;
+          _shopItems = shopResult.items;
+          _availablePool = shopResult.availablePool;
           _isLoading = false;
         });
       }
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _myItems = _withOnboardingGift([]);
-          _shopItems = ClosetItem.allItems;
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // 온보딩 선물 아이템이 나의 서랍에 반드시 포함되도록 보장
-  List<ClosetItem> _withOnboardingGift(List<ClosetItem> items) {
-    final giftType = widget.initialRepresentativeItemType;
-    if (giftType == null) return items;
+  bool get _hasAnyEquipped =>
+      _equipped.hatId != null ||
+      _equipped.glassesId != null ||
+      _equipped.clothesId != null ||
+      _equipped.backgroundId != null;
 
-    final alreadyIncluded = items.any((i) => i.itemType == giftType);
-    if (alreadyIncluded) return items;
-
+  ClosetItem? _findItemById(int id) {
     try {
-      final giftItem = ClosetItem.allItems
-          .firstWhere((i) => i.itemType == giftType)
-          .copyWith(owned: true);
-      return [giftItem, ...items];
+      return _myItems.firstWhere((item) => item.id == id);
     } catch (_) {
-      return items;
+      return null;
     }
   }
 
-  String _getLeoImagePath() {
-    if (_equippedItemType == null) return 'assets/images/leo_default.png';
-    try {
-      return ClosetItem.allItems
-          .firstWhere((item) => item.itemType == _equippedItemType)
-          .leoImagePath;
-    } catch (_) {
-      return 'assets/images/leo_default.png';
-    }
-  }
-
-  Future<void> _equipItem(ClosetItem item) async {
+  Future<void> _toggleEquip(ClosetItem item) async {
     if (_isUpdating) return;
-    if (_equippedItemType == item.itemType) return;
-
-    final previous = _equippedItemType;
+    final alreadyEquipped = _equipped.isEquipped(item.id);
+    final previousEquipped = _equipped;
 
     setState(() {
       _isUpdating = true;
-      _equippedItemType = item.itemType;
+      _equipped = alreadyEquipped
+          ? _equipped.clearCategory(item.category)
+          : _equipped;
     });
 
     try {
-      await _closetService.setRepresentativeItem(item.itemType);
+      final newEquipped = alreadyEquipped
+          ? await _closetService.unequipItem(item.category)
+          : await _closetService.equipItem(item.id);
+      if (mounted) setState(() => _equipped = newEquipped);
     } catch (_) {
       if (mounted) {
-        setState(() => _equippedItemType = previous);
+        setState(() => _equipped = previousEquipped);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('착용 변경에 실패했어요. 다시 시도해 주세요.')),
+          SnackBar(
+            content: Text(alreadyEquipped ? '탈착에 실패했어요.' : '착용에 실패했어요.'),
+          ),
         );
       }
     } finally {
@@ -146,24 +126,20 @@ class _ClosetScreenState extends State<ClosetScreen> {
     setState(() => _isUpdating = true);
 
     try {
-      final newPool = await _closetService.purchaseItem(item.itemType);
+      final remainingPool = await _closetService.purchaseItem(item.id);
       if (mounted) {
         setState(() {
-          _availablePool = newPool;
-          final shopIdx = _shopItems.indexWhere(
-            (i) => i.itemType == item.itemType,
-          );
-          if (shopIdx >= 0) {
-            _shopItems[shopIdx] = item.copyWith(owned: true);
-          }
+          _availablePool = remainingPool;
+          final idx = _shopItems.indexWhere((i) => i.id == item.id);
+          if (idx >= 0) _shopItems[idx] = item.copyWith(owned: true);
           _myItems = [..._myItems, item.copyWith(owned: true)];
         });
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('구매에 실패했어요. 다시 시도해 주세요.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('구매에 실패했어요. 다시 시도해 주세요.')),
+        );
       }
     } finally {
       if (mounted) setState(() => _isUpdating = false);
@@ -226,27 +202,48 @@ class _ClosetScreenState extends State<ClosetScreen> {
   }
 
   Widget _buildLeoPreview() {
+    final bgItem = _equipped.backgroundId != null
+        ? _findItemById(_equipped.backgroundId!)
+        : null;
+    final clothesItem = _equipped.clothesId != null
+        ? _findItemById(_equipped.clothesId!)
+        : null;
+    final glassesItem = _equipped.glassesId != null
+        ? _findItemById(_equipped.glassesId!)
+        : null;
+    final hatItem =
+        _equipped.hatId != null ? _findItemById(_equipped.hatId!) : null;
+
     return Container(
       height: 200,
       color: AppColors.background,
       child: Stack(
         alignment: Alignment.center,
         children: [
+          if (bgItem != null)
+            Positioned.fill(
+              child: _NetworkItemImage(imageUrl: bgItem.imageUrl, height: 200),
+            ),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 350),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: ScaleTransition(scale: animation, child: child),
-            ),
-            child: Image.asset(
-              _getLeoImagePath(),
-              key: ValueKey(_equippedItemType),
-              height: 150,
-              fit: BoxFit.contain,
-              errorBuilder: (context, e, s) =>
-                  const Text('🦫', style: TextStyle(fontSize: 90)),
+            child: Stack(
+              key: ValueKey(_equipped.hashCode),
+              alignment: Alignment.center,
+              children: [
+                Image.asset(
+                  _hasAnyEquipped ? 'assets/images/leo_default.png' : 'assets/images/leo_flower.png',
+                  height: 150,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, e, s) =>
+                      const Text('🦫', style: TextStyle(fontSize: 90)),
+                ),
+                if (clothesItem != null)
+                  _NetworkItemImage(imageUrl: clothesItem.imageUrl, height: 150),
+                if (glassesItem != null)
+                  _NetworkItemImage(imageUrl: glassesItem.imageUrl, height: 150),
+                if (hatItem != null)
+                  _NetworkItemImage(imageUrl: hatItem.imageUrl, height: 150),
+              ],
             ),
           ),
           const Positioned(
@@ -387,10 +384,10 @@ class _ClosetScreenState extends State<ClosetScreen> {
   }
 
   Widget _buildMyItemCard(ClosetItem item) {
-    final isEquipped = item.itemType == _equippedItemType;
+    final isEquipped = _equipped.isEquipped(item.id);
 
     return GestureDetector(
-      onTap: () => _equipItem(item),
+      onTap: () => _toggleEquip(item),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(10),
@@ -416,15 +413,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
               children: [
                 Expanded(
                   child: Center(
-                    child: Image.asset(
-                      item.leoImagePath,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, e, s) => const Icon(
-                        Icons.pets,
-                        size: 40,
-                        color: AppColors.textSub,
-                      ),
-                    ),
+                    child: _NetworkItemImage(imageUrl: item.imageUrl, height: 60),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -504,7 +493,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
 
   Widget _buildShopItemCard(ClosetItem item) {
     final alreadyOwned =
-        item.owned || _myItems.any((i) => i.itemType == item.itemType);
+        item.owned || _myItems.any((i) => i.id == item.id);
     final canAfford = _availablePool >= item.price;
 
     return GestureDetector(
@@ -534,40 +523,16 @@ class _ClosetScreenState extends State<ClosetScreen> {
                     child: ColorFiltered(
                       colorFilter: alreadyOwned
                           ? const ColorFilter.matrix([
-                              0.33,
-                              0.33,
-                              0.33,
-                              0,
-                              0,
-                              0.33,
-                              0.33,
-                              0.33,
-                              0,
-                              0,
-                              0.33,
-                              0.33,
-                              0.33,
-                              0,
-                              0,
-                              0,
-                              0,
-                              0,
-                              1,
-                              0,
+                              0.33, 0.33, 0.33, 0, 0,
+                              0.33, 0.33, 0.33, 0, 0,
+                              0.33, 0.33, 0.33, 0, 0,
+                              0, 0, 0, 1, 0,
                             ])
                           : const ColorFilter.mode(
                               Colors.transparent,
                               BlendMode.multiply,
                             ),
-                      child: Image.asset(
-                        item.leoImagePath,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, e, s) => const Icon(
-                          Icons.pets,
-                          size: 40,
-                          color: AppColors.textSub,
-                        ),
-                      ),
+                      child: _NetworkItemImage(imageUrl: item.imageUrl, height: 60),
                     ),
                   ),
                 ),
@@ -581,8 +546,8 @@ class _ClosetScreenState extends State<ClosetScreen> {
                       color: alreadyOwned
                           ? AppColors.textSub
                           : (canAfford
-                                ? AppColors.primary
-                                : AppColors.primaryDisabled),
+                              ? AppColors.primary
+                              : AppColors.primaryDisabled),
                     ),
                     const SizedBox(width: 2),
                     Text(
@@ -593,8 +558,8 @@ class _ClosetScreenState extends State<ClosetScreen> {
                         color: alreadyOwned
                             ? AppColors.textSub
                             : (canAfford
-                                  ? AppColors.primary
-                                  : AppColors.primaryDisabled),
+                                ? AppColors.primary
+                                : AppColors.primaryDisabled),
                       ),
                     ),
                   ],
@@ -664,6 +629,27 @@ class _ClosetScreenState extends State<ClosetScreen> {
   }
 }
 
+class _NetworkItemImage extends StatelessWidget {
+  final String imageUrl;
+  final double height;
+
+  const _NetworkItemImage({required this.imageUrl, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      imageUrl,
+      height: height,
+      fit: BoxFit.contain,
+      errorBuilder: (_, e, s) => Icon(
+        Icons.pets,
+        size: height * 0.6,
+        color: AppColors.textSub,
+      ),
+    );
+  }
+}
+
 class _PurchaseSheet extends StatelessWidget {
   final ClosetItem item;
   final int availablePool;
@@ -691,12 +677,7 @@ class _PurchaseSheet extends StatelessWidget {
         children: [
           SizedBox(
             height: 100,
-            child: Image.asset(
-              item.leoImagePath,
-              fit: BoxFit.contain,
-              errorBuilder: (context, e, s) =>
-                  const Icon(Icons.pets, size: 60, color: AppColors.textSub),
-            ),
+            child: _NetworkItemImage(imageUrl: item.imageUrl, height: 100),
           ),
           const SizedBox(height: 12),
           Text(
