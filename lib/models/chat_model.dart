@@ -14,13 +14,13 @@ class CtaAction {
   });
 
   static CtaAction? fromJson(Map<String, dynamic>? json) {
-    if (json == null) return null;
+    if (json == null || json['type'] == null) return null;
     return CtaAction(
       type: json['type'] as String,
-      label: json['label'] as String,
+      label: json['label'] as String? ?? '',
       stepId: json['step_id'] as int?,
       cycleNumber: json['cycle_number'] as int?,
-      subject: json['subject'] as String,
+      subject: json['subject'] as String? ?? '',
     );
   }
 }
@@ -38,25 +38,25 @@ class TodoCreated {
 }
 
 class ChatResponse {
+  final String sessionId;
   final String reply;
   final CtaAction? cta;
-  final List<TodoCreated> todosCreated;
+  final List<int> todosCreated;
 
   const ChatResponse({
+    required this.sessionId,
     required this.reply,
     this.cta,
     this.todosCreated = const [],
   });
 
   factory ChatResponse.fromJson(Map<String, dynamic> json) {
-    final rawTodos = json['todos_created'] as List<dynamic>?;
+    final rawTodos = json['todosCreated'] as List<dynamic>?;
     return ChatResponse(
-      reply: json['reply'] as String? ?? json['message'] as String? ?? '',
+      sessionId: json['sessionId'] as String? ?? '',
+      reply: json['reply'] as String? ?? '',
       cta: CtaAction.fromJson(json['cta'] as Map<String, dynamic>?),
-      todosCreated: rawTodos
-              ?.map((e) => TodoCreated.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      todosCreated: rawTodos?.map((e) => e as int).toList() ?? [],
     );
   }
 }
@@ -67,7 +67,7 @@ class ChatMessage {
   final bool isUser;
   final DateTime timestamp;
   final CtaAction? cta;
-  final List<TodoCreated> todosCreated;
+  final List<int> todosCreated;
 
   const ChatMessage({
     required this.id,
