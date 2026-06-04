@@ -88,7 +88,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     String content,
     bool isUser, {
     CtaAction? cta,
-    List<TodoCreated> todosCreated = const [],
+    List<int> todosCreated = const [],
   }) {
     final now = DateTime.now();
     return ChatMessage(
@@ -527,9 +527,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
   }
 
-  void _showTodosSnackbar(List<TodoCreated> todos) {
+  void _showTodosSnackbar(List<int> todos) {
     final text = todos.length == 1
-        ? '✅ "${todos.first.title}" 할 일이 추가됐어요!'
+        ? '✅ 할 일 1개가 추가됐어요!'
         : '✅ 할 일 ${todos.length}개가 추가됐어요!';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
