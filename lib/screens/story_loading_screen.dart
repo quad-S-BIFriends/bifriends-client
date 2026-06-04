@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../services/mind_service.dart';
 import '../theme/app_colors.dart';
 import 'friends_activity_screen.dart';
 
 class StoryLoadingScreen extends StatefulWidget {
-  const StoryLoadingScreen({super.key});
+  final String emotion;
+
+  const StoryLoadingScreen({super.key, required this.emotion});
 
   @override
   State<StoryLoadingScreen> createState() => _StoryLoadingScreenState();
@@ -28,15 +31,29 @@ class _StoryLoadingScreenState extends State<StoryLoadingScreen>
       end: -12,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
-    // TODO: BE 연동 시 실제 로딩 완료 시점으로 교체
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const FriendsActivityScreen()),
-        );
-      }
-    });
+    _loadScenario();
+  }
+
+  Future<void> _loadScenario() async {
+    try {
+      final scenario = await MindService().generateScenario(widget.emotion);
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FriendsActivityScreen(scenario: scenario),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('시나리오를 불러오지 못했어요: $e'),
+          backgroundColor: const Color(0xFFD04B44),
+        ),
+      );
+      Navigator.pop(context);
+    }
   }
 
   @override
