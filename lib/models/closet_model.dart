@@ -1,125 +1,99 @@
+import '../config/api_config.dart';
+
 class ClosetItem {
-  final String itemType;
+  final int id;
   final String name;
-  final String emoji;
+  final String category; // HAT, GLASSES, CLOTHES, BACKGROUND
+  final String imageKey;
   final int price;
   final bool owned;
 
   const ClosetItem({
-    required this.itemType,
+    required this.id,
     required this.name,
-    required this.emoji,
-    required this.price,
-    required this.owned,
+    required this.category,
+    required this.imageKey,
+    this.price = 0,
+    this.owned = false,
   });
 
-  String get leoImagePath {
-    const images = {
-      'GIFT_1': 'assets/images/leo_studying.png',
-      'GIFT_2': 'assets/images/leo_ribbon.png',
-      'GIFT_3': 'assets/images/leo_flower.png',
-      'GIFT_4': 'assets/images/leo_sunglasses.png',
-      'GIFT_5': 'assets/images/leo_dinosaur.png',
-      'GIFT_6': 'assets/images/leo_scientist.png',
-      'GIFT_7': 'assets/images/leo_singer.png',
-    };
-    return images[itemType] ?? 'assets/images/leo_default.png';
+  String get imageUrl {
+    if (imageKey.startsWith('http')) return imageKey;
+    return '${ApiConfig.baseUrl}/$imageKey';
   }
 
-  factory ClosetItem.fromJson(Map<String, dynamic> json) {
-    final itemType = json['itemType'] as String;
-    return ClosetItem(
-      itemType: itemType,
-      name: json['name'] as String? ?? _defaultName(itemType),
-      emoji: json['emoji'] as String? ?? _defaultEmoji(itemType),
-      price: json['price'] as int? ?? 0,
-      owned: json['owned'] as bool? ?? false,
-    );
-  }
+  factory ClosetItem.fromShopJson(Map<String, dynamic> json) => ClosetItem(
+    id: json['id'] as int,
+    name: json['name'] as String,
+    category: json['category'] as String,
+    imageKey: json['imageKey'] as String,
+    price: json['price'] as int? ?? 0,
+    owned: json['owned'] as bool? ?? false,
+  );
+
+  factory ClosetItem.fromMyItemJson(Map<String, dynamic> json) => ClosetItem(
+    id: json['id'] as int,
+    name: json['name'] as String,
+    category: json['category'] as String,
+    imageKey: json['imageKey'] as String,
+    owned: true,
+  );
 
   ClosetItem copyWith({bool? owned}) => ClosetItem(
-    itemType: itemType,
+    id: id,
     name: name,
-    emoji: emoji,
+    category: category,
+    imageKey: imageKey,
     price: price,
     owned: owned ?? this.owned,
   );
+}
 
-  static String _defaultName(String itemType) {
-    const names = {
-      'GIFT_1': '책',
-      'GIFT_2': '리본',
-      'GIFT_3': '꽃다발',
-      'GIFT_4': '선글라스',
-      'GIFT_5': '공룡 의상',
-      'GIFT_6': '과학자 가운',
-      'GIFT_7': '가수 의상',
-    };
-    return names[itemType] ?? '아이템';
+class EquippedItems {
+  final int? hatId;
+  final int? glassesId;
+  final int? clothesId;
+  final int? backgroundId;
+
+  const EquippedItems({
+    this.hatId,
+    this.glassesId,
+    this.clothesId,
+    this.backgroundId,
+  });
+
+  factory EquippedItems.fromJson(Map<String, dynamic> json) => EquippedItems(
+    hatId: json['hatId'] as int?,
+    glassesId: json['glassesId'] as int?,
+    clothesId: json['clothesId'] as int?,
+    backgroundId: json['backgroundId'] as int?,
+  );
+
+  bool isEquipped(int itemId) =>
+      itemId == hatId ||
+      itemId == glassesId ||
+      itemId == clothesId ||
+      itemId == backgroundId;
+
+  int? equippedIdForCategory(String category) {
+    switch (category) {
+      case 'HAT':
+        return hatId;
+      case 'GLASSES':
+        return glassesId;
+      case 'CLOTHES':
+        return clothesId;
+      case 'BACKGROUND':
+        return backgroundId;
+      default:
+        return null;
+    }
   }
 
-  static String _defaultEmoji(String itemType) {
-    const emojis = {
-      'GIFT_1': '📚',
-      'GIFT_2': '🎀',
-      'GIFT_3': '🍓',
-      'GIFT_4': '🕶️',
-      'GIFT_5': '🦕',
-      'GIFT_6': '🔬',
-      'GIFT_7': '🎤',
-    };
-    return emojis[itemType] ?? '🎁';
-  }
-
-  static List<ClosetItem> get allItems => const [
-    ClosetItem(
-      itemType: 'GIFT_1',
-      name: '책',
-      emoji: '📚',
-      price: 8,
-      owned: false,
-    ),
-    ClosetItem(
-      itemType: 'GIFT_2',
-      name: '리본',
-      emoji: '🎀',
-      price: 12,
-      owned: false,
-    ),
-    ClosetItem(
-      itemType: 'GIFT_3',
-      name: '꽃다발',
-      emoji: '🍓',
-      price: 15,
-      owned: false,
-    ),
-    ClosetItem(
-      itemType: 'GIFT_4',
-      name: '선글라스',
-      emoji: '🕶️',
-      price: 20,
-      owned: false,
-    ),
-    ClosetItem(
-      itemType: 'GIFT_5',
-      name: '공룡 의상',
-      emoji: '🦕',
-      price: 30,
-      owned: false,
-    ),
-    ClosetItem(
-      itemType: 'GIFT_6',
-      name: '과학자 가운',
-      emoji: '🔬',
-      price: 35,
-      owned: false,
-    ),
-    ClosetItem(
-      itemType: 'GIFT_7',
-      name: '가수 의상',
-      emoji: '🎤',
-      price: 30,
-      owned: false,
-    ),
-  ];
+  EquippedItems clearCategory(String category) => EquippedItems(
+    hatId: category == 'HAT' ? null : hatId,
+    glassesId: category == 'GLASSES' ? null : glassesId,
+    clothesId: category == 'CLOTHES' ? null : clothesId,
+    backgroundId: category == 'BACKGROUND' ? null : backgroundId,
+  );
 }
