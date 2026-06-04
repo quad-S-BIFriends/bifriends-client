@@ -20,18 +20,7 @@ class GuardianMissionSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Text(
-              'WEEKLY MISSION FOR GUARDIAN',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primary,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 4),
           _buildSectionLabel(icon: Icons.crop_square, label: '아이에게 건넬 칭찬 멘트'),
           const SizedBox(height: 10),
           Stack(

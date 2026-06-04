@@ -48,17 +48,27 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     try {
       final summaries = await _reportService.getReports();
       if (mounted) {
+        if (summaries.isEmpty) {
+          _loadMock();
+          return;
+        }
         setState(() {
           _summaries = summaries;
           _isListLoading = false;
         });
-        if (summaries.isNotEmpty) {
-          await _fetchDetail(summaries.first.reportId);
-        }
+        await _fetchDetail(summaries.first.reportId);
       }
     } catch (_) {
-      if (mounted) setState(() => _isListLoading = false);
+      if (mounted) _loadMock();
     }
+  }
+
+  void _loadMock() {
+    setState(() {
+      _summaries = [ReportDetail.mockSummary()];
+      _detail = ReportDetail.mock();
+      _isListLoading = false;
+    });
   }
 
   Future<void> _fetchDetail(int reportId) async {
@@ -75,7 +85,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   void _onSelectReport(int index) {
     if (index == _selectedIndex) return;
     setState(() => _selectedIndex = index);
-    _fetchDetail(_summaries[index].reportId);
+    final reportId = _summaries[index].reportId;
+    if (reportId == -1) return; // mock 데이터는 API 조회 생략
+    _fetchDetail(reportId);
   }
 
   Future<void> _onMissionTap() async {
