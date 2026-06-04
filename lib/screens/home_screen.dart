@@ -375,7 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _getCharacterImagePath() {
-    return 'assets/images/leo_default.png';
+    return 'assets/images/leo_flower.png';
   }
 
   void _navigateToCloset() {
