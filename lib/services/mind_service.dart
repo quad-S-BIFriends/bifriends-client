@@ -41,30 +41,43 @@ class MindService {
 
   Future<MindScenario> generateScenario(String emotion) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/mind/scenario');
-    debugPrint('[MindService] generateScenario 요청 → emotion: $emotion, url: $url');
+    debugPrint(
+      '[MindService] generateScenario 요청 → emotion: $emotion, url: $url',
+    );
 
     late http.Response response;
     try {
-      response = await _withTokenRefresh(
-        (headers) => http.post(
-          url,
-          headers: headers,
-          body: jsonEncode({'emotion': emotion}),
-        ),
-      );
+      response =
+          await _withTokenRefresh(
+            (headers) => http.post(
+              url,
+              headers: headers,
+              body: jsonEncode({'emotion': emotion}),
+            ),
+          ).timeout(
+            const Duration(seconds: 120),
+            onTimeout: () => throw Exception('서버 응답 시간이 초과됐어요 (120초).'),
+          );
     } catch (e) {
       debugPrint('[MindService] generateScenario 네트워크 오류: $e');
       rethrow;
     }
 
-    debugPrint('[MindService] generateScenario 응답 status: ${response.statusCode}');
-    debugPrint('[MindService] generateScenario 응답 body: ${utf8.decode(response.bodyBytes)}');
+    debugPrint(
+      '[MindService] generateScenario 응답 status: ${response.statusCode}',
+    );
+    debugPrint(
+      '[MindService] generateScenario 응답 body: ${utf8.decode(response.bodyBytes)}',
+    );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       try {
-        final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        final json =
+            jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         final scenario = MindScenario.fromJson(json);
-        debugPrint('[MindService] generateScenario 파싱 성공 → setId: ${scenario.setId}');
+        debugPrint(
+          '[MindService] generateScenario 파싱 성공 → setId: ${scenario.setId}',
+        );
         return scenario;
       } catch (e) {
         debugPrint('[MindService] generateScenario 파싱 오류: $e');
@@ -77,11 +90,8 @@ class MindService {
   Future<int> saveSession(MindScenario scenario) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/mind/sessions');
     final response = await _withTokenRefresh(
-      (headers) => http.post(
-        url,
-        headers: headers,
-        body: jsonEncode(scenario.toJson()),
-      ),
+      (headers) =>
+          http.post(url, headers: headers, body: jsonEncode(scenario.toJson())),
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -109,8 +119,9 @@ class MindService {
   }
 
   Future<MindScenario> getSession(String sessionId) async {
-    final url =
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/mind/sessions/$sessionId');
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/mind/sessions/$sessionId',
+    );
     final response = await _withTokenRefresh(
       (headers) => http.get(url, headers: headers),
     );
