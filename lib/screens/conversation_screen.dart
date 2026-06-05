@@ -145,24 +145,28 @@ class _ConversationScreenState extends State<ConversationScreen> {
       );
 
       if (mounted && chatResponse.reply.isNotEmpty) {
-        setState(() => _messages.add(_makeMessage(
+        setState(
+          () => _messages.add(
+            _makeMessage(
               'reply',
               chatResponse.reply,
               false,
               cta: chatResponse.cta,
               todosCreated: chatResponse.todosCreated,
-            )));
+            ),
+          ),
+        );
         if (chatResponse.todosCreated.isNotEmpty) {
           _showTodosSnackbar(chatResponse.todosCreated);
         }
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _messages.add(_makeMessage(
-              'err',
-              '레오가 지금 답하기 어려워요 😅\n잠시 후 다시 말 걸어줘!',
-              false,
-            )));
+        setState(
+          () => _messages.add(
+            _makeMessage('err', '레오가 지금 답하기 어려워요 😅\n잠시 후 다시 말 걸어줘!', false),
+          ),
+        );
       }
     } finally {
       if (mounted) {
@@ -352,7 +356,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
         child: const SizedBox(
           width: 24,
           height: 16,
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.primary,
+          ),
         ),
       ),
     );
@@ -426,7 +433,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
     final bubble = Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.7,
+        ),
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: isUser
@@ -439,7 +448,11 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   bottomRight: Radius.circular(4),
                 ),
                 boxShadow: [
-                  BoxShadow(color: Color(0x0D000000), blurRadius: 8, offset: Offset(0, 2)),
+                  BoxShadow(
+                    color: Color(0x0D000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
                 ],
               )
             : _leoBubbleDecoration,
@@ -482,7 +495,11 @@ class _ConversationScreenState extends State<ConversationScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
+            const Icon(
+              Icons.arrow_forward_rounded,
+              color: Colors.white,
+              size: 16,
+            ),
             const SizedBox(width: 6),
             Text(
               cta.label,
@@ -500,37 +517,41 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   void _handleCtaTap(CtaAction cta) {
     if (cta.type == 'navigate_to_step') {
-      _pushScreen(LearningActivityScreen(
-        levelData: LevelData(
-          level: cta.stepId ?? 1,
-          stepId: cta.stepId ?? 1,
-          title: cta.label,
-          description: '',
-          subtitle: '',
-          status: LevelStatus.current,
-          completedCycles: const [],
+      _pushScreen(
+        LearningActivityScreen(
+          levelData: LevelData(
+            level: cta.stepId ?? 1,
+            stepId: cta.stepId ?? 1,
+            title: cta.label,
+            description: '',
+            subtitle: '',
+            status: LevelStatus.current,
+            completedCycles: const [],
+          ),
+          initialStep: cta.cycleNumber ?? 1,
+          subject: cta.subject,
         ),
-        initialStep: cta.cycleNumber ?? 1,
-        subject: cta.subject,
-      ));
+      );
     } else if (cta.type == 'navigate_to_subject') {
-      _pushScreen(Scaffold(
-        appBar: AppBar(
-          title: const Text('국어 공부방'),
+      _pushScreen(
+        Scaffold(
+          appBar: AppBar(
+            title: const Text('국어 공부방'),
+            backgroundColor: AppColors.background,
+            foregroundColor: AppColors.textMain,
+            elevation: 0,
+          ),
           backgroundColor: AppColors.background,
-          foregroundColor: AppColors.textMain,
-          elevation: 0,
+          body: const KoreanLearningRoadmap(),
         ),
-        backgroundColor: AppColors.background,
-        body: const KoreanLearningRoadmap(),
-      ));
+      );
     }
   }
 
   void _showTodosSnackbar(List<int> todos) {
     final text = todos.length == 1
-        ? '✅ 할 일 1개가 추가됐어요!'
-        : '✅ 할 일 ${todos.length}개가 추가됐어요!';
+        ? '할 일 1개가 추가됐어요!'
+        : '할 일 ${todos.length}개가 추가됐어요!';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
