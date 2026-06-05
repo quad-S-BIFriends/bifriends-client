@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
@@ -50,10 +51,19 @@ class ChatService {
       }),
     );
 
+    debugPrint('[ChatService] sendMessage status: ${response.statusCode}');
+    debugPrint('[ChatService] sendMessage body: ${utf8.decode(response.bodyBytes)}');
+
     if (response.statusCode == 200) {
-      return ChatResponse.fromJson(
-        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
-      );
+      try {
+        final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        final chatResponse = ChatResponse.fromJson(json);
+        debugPrint('[ChatService] reply: "${chatResponse.reply}", cta: ${chatResponse.cta?.type}');
+        return chatResponse;
+      } catch (e) {
+        debugPrint('[ChatService] 파싱 오류: $e');
+        rethrow;
+      }
     }
     throw Exception('메시지 전송 실패: ${response.statusCode}');
   }

@@ -160,7 +160,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
           _showTodosSnackbar(chatResponse.todosCreated);
         }
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[Chat] sendMessage 오류: $e');
       if (mounted) {
         setState(
           () => _messages.add(
