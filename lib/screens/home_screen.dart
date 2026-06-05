@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../models/closet_model.dart';
 import '../models/home_model.dart';
 import '../models/todo_model.dart';
 import '../widgets/falling_leaves.dart';
+import '../services/closet_service.dart';
 import '../services/member_service.dart';
 import '../services/home_service.dart';
 import '../theme/app_colors.dart';
@@ -30,9 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
   int _totalPoolForLevelUp = 1000;
   int _poolNeededForNextLevel = 1000;
 
+  String? _equippedOutfitCode;
+
   late List<TodoItem> _todos;
   final _memberService = MemberService();
   final _homeService = HomeService();
+  final _closetService = ClosetService();
 
   @override
   void initState() {
@@ -42,7 +47,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchData() async {
-    await Future.wait([_fetchHomeData(), _fetchUserInfo()]);
+    await Future.wait([_fetchHomeData(), _fetchUserInfo(), _fetchEquippedOutfit()]);
+  }
+
+  Future<void> _fetchEquippedOutfit() async {
+    try {
+      final result = await _closetService.getMyItems();
+      if (mounted) {
+        setState(() => _equippedOutfitCode = result.equipped.outfitCode);
+      }
+    } catch (_) {}
   }
 
   Future<void> _fetchHomeData() async {
@@ -375,14 +389,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _getCharacterImagePath() {
-    return 'assets/images/leo_flower.png';
+    return ClosetItem.assetPathForCode(_equippedOutfitCode);
   }
 
   void _navigateToCloset() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const ClosetScreen()),
-    ).then((_) => _fetchData());
+    ).then((_) => _fetchEquippedOutfit());
   }
 
   @override
@@ -532,12 +546,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
           Positioned(
             bottom: 20,
-            child: Image.asset(
-              _getCharacterImagePath(),
-              height: 260,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Text('🦫', style: TextStyle(fontSize: 120)),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: Image.asset(
+                _getCharacterImagePath(),
+                key: ValueKey(_equippedOutfitCode),
+                height: 260,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) =>
+                    const Text('🦫', style: TextStyle(fontSize: 120)),
+              ),
             ),
           ),
 
