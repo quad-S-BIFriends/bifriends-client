@@ -37,8 +37,10 @@ class _ClosetScreenState extends State<ClosetScreen> {
         _closetService.getShopItems(),
       ]);
       if (mounted) {
-        final myResult = results[0] as ({List<ClosetItem> items, EquippedItems equipped});
-        final shopResult = results[1] as ({List<ClosetItem> items, int availablePool});
+        final myResult =
+            results[0] as ({List<ClosetItem> items, EquippedItems equipped});
+        final shopResult =
+            results[1] as ({List<ClosetItem> items, int availablePool});
         setState(() {
           _myItems = myResult.items;
           _equipped = myResult.equipped;
@@ -52,15 +54,9 @@ class _ClosetScreenState extends State<ClosetScreen> {
     }
   }
 
-  bool get _hasAnyEquipped =>
-      _equipped.hatId != null ||
-      _equipped.glassesId != null ||
-      _equipped.clothesId != null ||
-      _equipped.backgroundId != null;
-
-  ClosetItem? _findItemById(int id) {
+  ClosetItem? _findItemByCode(String code) {
     try {
-      return _myItems.firstWhere((item) => item.id == id);
+      return _myItems.firstWhere((item) => item.itemCode == code);
     } catch (_) {
       return null;
     }
@@ -68,22 +64,24 @@ class _ClosetScreenState extends State<ClosetScreen> {
 
   Future<void> _toggleEquip(ClosetItem item) async {
     if (_isUpdating) return;
-    final alreadyEquipped = _equipped.isEquipped(item.id);
+    final alreadyEquipped = _equipped.isEquipped(item.itemCode);
     final previousEquipped = _equipped;
 
+    // 낙관적 업데이트: 서버 응답 전에 UI 먼저 반영
     setState(() {
       _isUpdating = true;
       _equipped = alreadyEquipped
-          ? _equipped.clearCategory(item.category)
-          : _equipped;
+          ? _equipped.clear()
+          : EquippedItems(outfitCode: item.itemCode);
     });
 
     try {
       final newEquipped = alreadyEquipped
-          ? await _closetService.unequipItem(item.category)
-          : await _closetService.equipItem(item.id);
+          ? await _closetService.unequipItem()
+          : await _closetService.equipItem(item.itemCode);
       if (mounted) setState(() => _equipped = newEquipped);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('equip error: $e');
       if (mounted) {
         setState(() => _equipped = previousEquipped);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -95,6 +93,23 @@ class _ClosetScreenState extends State<ClosetScreen> {
     } finally {
       if (mounted) setState(() => _isUpdating = false);
     }
+  }
+
+  void _showEquipSheet(ClosetItem item) {
+    final alreadyEquipped = _equipped.isEquipped(item.itemCode);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _EquipSheet(
+        item: item,
+        isEquipped: alreadyEquipped,
+        onConfirm: () {
+          Navigator.pop(ctx);
+          _toggleEquip(item);
+        },
+        onCancel: () => Navigator.pop(ctx),
+      ),
+    );
   }
 
   void _showPurchaseSheet(ClosetItem item) {
@@ -126,24 +141,44 @@ class _ClosetScreenState extends State<ClosetScreen> {
     setState(() => _isUpdating = true);
 
     try {
-      final remainingPool = await _closetService.purchaseItem(item.id);
+      final remainingPool = await _closetService.purchaseItem(item.itemCode);
       if (mounted) {
+        final purchasedItem = item.copyWith(owned: true);
         setState(() {
           _availablePool = remainingPool;
-          final idx = _shopItems.indexWhere((i) => i.id == item.id);
-          if (idx >= 0) _shopItems[idx] = item.copyWith(owned: true);
-          _myItems = [..._myItems, item.copyWith(owned: true)];
+          final idx = _shopItems.indexWhere((i) => i.itemCode == item.itemCode);
+          if (idx >= 0) _shopItems[idx] = purchasedItem;
+          _myItems = [..._myItems, purchasedItem];
         });
+        _showPurchaseSuccessSheet(purchasedItem);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('purchase error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('구매에 실패했어요. 다시 시도해 주세요.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('구매에 실패했어요. 다시 시도해 주세요.')));
       }
     } finally {
       if (mounted) setState(() => _isUpdating = false);
     }
+  }
+
+  void _showPurchaseSuccessSheet(ClosetItem item) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      builder: (ctx) => _PurchaseSuccessSheet(
+        item: item,
+        onEquip: () {
+          Navigator.pop(ctx);
+          setState(() => _selectedTab = 0);
+          _toggleEquip(item);
+        },
+        onClose: () => Navigator.pop(ctx),
+      ),
+    );
   }
 
   @override
@@ -202,17 +237,10 @@ class _ClosetScreenState extends State<ClosetScreen> {
   }
 
   Widget _buildLeoPreview() {
-    final bgItem = _equipped.backgroundId != null
-        ? _findItemById(_equipped.backgroundId!)
-        : null;
-    final clothesItem = _equipped.clothesId != null
-        ? _findItemById(_equipped.clothesId!)
-        : null;
-    final glassesItem = _equipped.glassesId != null
-        ? _findItemById(_equipped.glassesId!)
-        : null;
-    final hatItem =
-        _equipped.hatId != null ? _findItemById(_equipped.hatId!) : null;
+    final assetPath = _equipped.outfitCode != null
+        ? (_findItemByCode(_equipped.outfitCode!)?.localAssetPath ??
+              'assets/images/leo_default.png')
+        : 'assets/images/leo_default.png';
 
     return Container(
       height: 200,
@@ -220,30 +248,15 @@ class _ClosetScreenState extends State<ClosetScreen> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          if (bgItem != null)
-            Positioned.fill(
-              child: _NetworkItemImage(imageUrl: bgItem.imageUrl, height: 200),
-            ),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 350),
-            child: Stack(
-              key: ValueKey(_equipped.hashCode),
-              alignment: Alignment.center,
-              children: [
-                Image.asset(
-                  _hasAnyEquipped ? 'assets/images/leo_default.png' : 'assets/images/leo_flower.png',
-                  height: 150,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, e, s) =>
-                      const Text('🦫', style: TextStyle(fontSize: 90)),
-                ),
-                if (clothesItem != null)
-                  _NetworkItemImage(imageUrl: clothesItem.imageUrl, height: 150),
-                if (glassesItem != null)
-                  _NetworkItemImage(imageUrl: glassesItem.imageUrl, height: 150),
-                if (hatItem != null)
-                  _NetworkItemImage(imageUrl: hatItem.imageUrl, height: 150),
-              ],
+            child: Image.asset(
+              assetPath,
+              key: ValueKey(assetPath),
+              height: 150,
+              fit: BoxFit.contain,
+              errorBuilder: (_, e, s) =>
+                  const Text('🦫', style: TextStyle(fontSize: 90)),
             ),
           ),
           const Positioned(
@@ -256,11 +269,6 @@ class _ClosetScreenState extends State<ClosetScreen> {
                 color: AppColors.textSub,
               ),
             ),
-          ),
-          const Positioned(
-            right: 44,
-            top: 36,
-            child: Icon(Icons.auto_awesome, size: 20, color: Color(0xFFB0A090)),
           ),
         ],
       ),
@@ -384,10 +392,10 @@ class _ClosetScreenState extends State<ClosetScreen> {
   }
 
   Widget _buildMyItemCard(ClosetItem item) {
-    final isEquipped = _equipped.isEquipped(item.id);
+    final isEquipped = _equipped.isEquipped(item.itemCode);
 
     return GestureDetector(
-      onTap: () => _toggleEquip(item),
+      onTap: () => _showEquipSheet(item),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(10),
@@ -413,7 +421,11 @@ class _ClosetScreenState extends State<ClosetScreen> {
               children: [
                 Expanded(
                   child: Center(
-                    child: _NetworkItemImage(imageUrl: item.imageUrl, height: 60),
+                    child: Image.asset(
+                      item.localAssetPath,
+                      height: 60,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -493,7 +505,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
 
   Widget _buildShopItemCard(ClosetItem item) {
     final alreadyOwned =
-        item.owned || _myItems.any((i) => i.id == item.id);
+        item.owned || _myItems.any((i) => i.itemCode == item.itemCode);
     final canAfford = _availablePool >= item.price;
 
     return GestureDetector(
@@ -523,16 +535,36 @@ class _ClosetScreenState extends State<ClosetScreen> {
                     child: ColorFiltered(
                       colorFilter: alreadyOwned
                           ? const ColorFilter.matrix([
-                              0.33, 0.33, 0.33, 0, 0,
-                              0.33, 0.33, 0.33, 0, 0,
-                              0.33, 0.33, 0.33, 0, 0,
-                              0, 0, 0, 1, 0,
+                              0.33,
+                              0.33,
+                              0.33,
+                              0,
+                              0,
+                              0.33,
+                              0.33,
+                              0.33,
+                              0,
+                              0,
+                              0.33,
+                              0.33,
+                              0.33,
+                              0,
+                              0,
+                              0,
+                              0,
+                              0,
+                              1,
+                              0,
                             ])
                           : const ColorFilter.mode(
                               Colors.transparent,
                               BlendMode.multiply,
                             ),
-                      child: _NetworkItemImage(imageUrl: item.imageUrl, height: 60),
+                      child: Image.asset(
+                        item.localAssetPath,
+                        height: 60,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ),
@@ -546,8 +578,8 @@ class _ClosetScreenState extends State<ClosetScreen> {
                       color: alreadyOwned
                           ? AppColors.textSub
                           : (canAfford
-                              ? AppColors.primary
-                              : AppColors.primaryDisabled),
+                                ? AppColors.primary
+                                : AppColors.primaryDisabled),
                     ),
                     const SizedBox(width: 2),
                     Text(
@@ -558,8 +590,8 @@ class _ClosetScreenState extends State<ClosetScreen> {
                         color: alreadyOwned
                             ? AppColors.textSub
                             : (canAfford
-                                ? AppColors.primary
-                                : AppColors.primaryDisabled),
+                                  ? AppColors.primary
+                                  : AppColors.primaryDisabled),
                       ),
                     ),
                   ],
@@ -629,27 +661,6 @@ class _ClosetScreenState extends State<ClosetScreen> {
   }
 }
 
-class _NetworkItemImage extends StatelessWidget {
-  final String imageUrl;
-  final double height;
-
-  const _NetworkItemImage({required this.imageUrl, required this.height});
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.network(
-      imageUrl,
-      height: height,
-      fit: BoxFit.contain,
-      errorBuilder: (_, e, s) => Icon(
-        Icons.pets,
-        size: height * 0.6,
-        color: AppColors.textSub,
-      ),
-    );
-  }
-}
-
 class _PurchaseSheet extends StatelessWidget {
   final ClosetItem item;
   final int availablePool;
@@ -677,7 +688,11 @@ class _PurchaseSheet extends StatelessWidget {
         children: [
           SizedBox(
             height: 100,
-            child: _NetworkItemImage(imageUrl: item.imageUrl, height: 100),
+            child: Image.asset(
+              item.localAssetPath,
+              height: 100,
+              fit: BoxFit.contain,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -736,6 +751,189 @@ class _PurchaseSheet extends StatelessWidget {
           const SizedBox(height: 10),
           TextButton(
             onPressed: () => Navigator.pop(context),
+            child: const Text(
+              '취소',
+              style: TextStyle(fontSize: 15, color: AppColors.textSub),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PurchaseSuccessSheet extends StatelessWidget {
+  final ClosetItem item;
+  final VoidCallback onEquip;
+  final VoidCallback onClose;
+
+  const _PurchaseSuccessSheet({
+    required this.item,
+    required this.onEquip,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              color: Color(0xFFE5EDD6),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_rounded,
+              color: AppColors.primary,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            '구매 완료!',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textMain,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${item.name}을(를) 얻었어요',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSub,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Image.asset(item.localAssetPath, height: 110, fit: BoxFit.contain),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onEquip,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                '지금 바로 착용하기',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: onClose,
+            child: const Text(
+              '나중에',
+              style: TextStyle(fontSize: 15, color: AppColors.textSub),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EquipSheet extends StatelessWidget {
+  final ClosetItem item;
+  final bool isEquipped;
+  final VoidCallback onConfirm;
+  final VoidCallback onCancel;
+
+  const _EquipSheet({
+    required this.item,
+    required this.isEquipped,
+    required this.onConfirm,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: 100,
+            child: Image.asset(
+              item.localAssetPath,
+              height: 100,
+              fit: BoxFit.contain,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            item.name,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textMain,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isEquipped ? '지금 착용 중인 아이템이에요' : '레오에게 입혀볼까요?',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSub,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onConfirm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isEquipped
+                    ? AppColors.textSub
+                    : AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                isEquipped ? '탈착하기' : '착용하기',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: onCancel,
             child: const Text(
               '취소',
               style: TextStyle(fontSize: 15, color: AppColors.textSub),

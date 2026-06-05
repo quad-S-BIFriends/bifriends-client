@@ -26,8 +26,10 @@ class ClosetService {
       final items = (json['items'] as List<dynamic>)
           .map((e) => ClosetItem.fromMyItemJson(e as Map<String, dynamic>))
           .toList();
-      final equipped =
-          EquippedItems.fromJson(json['equipped'] as Map<String, dynamic>);
+      final equippedRaw = json['equipped'];
+      final equipped = equippedRaw != null
+          ? EquippedItems.fromJson(equippedRaw as Map<String, dynamic>)
+          : const EquippedItems();
       return (items: items, equipped: equipped);
     }
     throw Exception('보유 아이템 조회 실패: ${response.statusCode}');
@@ -49,9 +51,10 @@ class ClosetService {
     throw Exception('상점 조회 실패: ${response.statusCode}');
   }
 
-  Future<int> purchaseItem(int itemId) async {
-    final url =
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/shop/items/$itemId/purchase');
+  Future<int> purchaseItem(String itemCode) async {
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/shop/items/$itemCode/purchase',
+    );
     final headers = await _getHeaders();
     final response = await http.post(url, headers: headers);
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -62,28 +65,34 @@ class ClosetService {
     throw Exception('아이템 구매 실패: ${response.statusCode}');
   }
 
-  Future<EquippedItems> equipItem(int itemId) async {
-    final url =
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/shop/items/$itemId/equip');
+  Future<EquippedItems> equipItem(String itemCode) async {
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/shop/items/$itemCode/equip',
+    );
     final headers = await _getHeaders();
     final response = await http.patch(url, headers: headers);
     if (response.statusCode == 200) {
       final json =
           jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-      return EquippedItems.fromJson(json['equipped'] as Map<String, dynamic>);
+      final equippedRaw = json['equipped'];
+      return equippedRaw != null
+          ? EquippedItems.fromJson(equippedRaw as Map<String, dynamic>)
+          : EquippedItems(outfitCode: itemCode);
     }
     throw Exception('아이템 착용 실패: ${response.statusCode}');
   }
 
-  Future<EquippedItems> unequipItem(String category) async {
-    final url =
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/shop/items/$category/equip');
+  Future<EquippedItems> unequipItem() async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/shop/items/equip');
     final headers = await _getHeaders();
     final response = await http.delete(url, headers: headers);
     if (response.statusCode == 200) {
       final json =
           jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-      return EquippedItems.fromJson(json['equipped'] as Map<String, dynamic>);
+      final equippedRaw = json['equipped'];
+      return equippedRaw != null
+          ? EquippedItems.fromJson(equippedRaw as Map<String, dynamic>)
+          : const EquippedItems();
     }
     throw Exception('아이템 탈착 실패: ${response.statusCode}');
   }

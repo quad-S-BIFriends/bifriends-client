@@ -1,15 +1,13 @@
-import '../config/api_config.dart';
-
 class ClosetItem {
-  final int id;
+  final String itemCode;
   final String name;
-  final String category; // HAT, GLASSES, CLOTHES, BACKGROUND
+  final String category;
   final String imageKey;
   final int price;
   final bool owned;
 
   const ClosetItem({
-    required this.id,
+    required this.itemCode,
     required this.name,
     required this.category,
     required this.imageKey,
@@ -17,13 +15,26 @@ class ClosetItem {
     this.owned = false,
   });
 
-  String get imageUrl {
-    if (imageKey.startsWith('http')) return imageKey;
-    return '${ApiConfig.baseUrl}/$imageKey';
-  }
+  static const _itemAssets = <String, String>{
+    'OUTFIT_DEFAULT': 'assets/images/leo_default.png',
+    'OUTFIT_STUDYING': 'assets/images/leo_studyhard.png',
+    'GIFT_1': 'assets/images/leo_studying.png',
+    'GIFT_2': 'assets/images/leo_ribbon.png',
+    'GIFT_3': 'assets/images/leo_flower.png',
+    'GIFT_4': 'assets/images/leo_sunglasses.png',
+    'GIFT_5': 'assets/images/leo_dinosaur.png',
+    'GIFT_6': 'assets/images/leo_scientist.png',
+    'GIFT_7': 'assets/images/leo_singer.png',
+  };
+
+  String get localAssetPath =>
+      _itemAssets[itemCode] ?? 'assets/images/leo_default.png';
+
+  static String assetPathForCode(String? code) =>
+      _itemAssets[code] ?? 'assets/images/leo_default.png';
 
   factory ClosetItem.fromShopJson(Map<String, dynamic> json) => ClosetItem(
-    id: json['id'] as int,
+    itemCode: json['itemCode'] as String,
     name: json['name'] as String,
     category: json['category'] as String,
     imageKey: json['imageKey'] as String,
@@ -32,7 +43,7 @@ class ClosetItem {
   );
 
   factory ClosetItem.fromMyItemJson(Map<String, dynamic> json) => ClosetItem(
-    id: json['id'] as int,
+    itemCode: json['itemCode'] as String,
     name: json['name'] as String,
     category: json['category'] as String,
     imageKey: json['imageKey'] as String,
@@ -40,7 +51,7 @@ class ClosetItem {
   );
 
   ClosetItem copyWith({bool? owned}) => ClosetItem(
-    id: id,
+    itemCode: itemCode,
     name: name,
     category: category,
     imageKey: imageKey,
@@ -50,50 +61,15 @@ class ClosetItem {
 }
 
 class EquippedItems {
-  final int? hatId;
-  final int? glassesId;
-  final int? clothesId;
-  final int? backgroundId;
+  final String? outfitCode;
 
-  const EquippedItems({
-    this.hatId,
-    this.glassesId,
-    this.clothesId,
-    this.backgroundId,
-  });
+  const EquippedItems({this.outfitCode});
 
   factory EquippedItems.fromJson(Map<String, dynamic> json) => EquippedItems(
-    hatId: json['hatId'] as int?,
-    glassesId: json['glassesId'] as int?,
-    clothesId: json['clothesId'] as int?,
-    backgroundId: json['backgroundId'] as int?,
+    outfitCode: json['outfitCode'] as String?,
   );
 
-  bool isEquipped(int itemId) =>
-      itemId == hatId ||
-      itemId == glassesId ||
-      itemId == clothesId ||
-      itemId == backgroundId;
+  bool isEquipped(String itemCode) => itemCode == outfitCode;
 
-  int? equippedIdForCategory(String category) {
-    switch (category) {
-      case 'HAT':
-        return hatId;
-      case 'GLASSES':
-        return glassesId;
-      case 'CLOTHES':
-        return clothesId;
-      case 'BACKGROUND':
-        return backgroundId;
-      default:
-        return null;
-    }
-  }
-
-  EquippedItems clearCategory(String category) => EquippedItems(
-    hatId: category == 'HAT' ? null : hatId,
-    glassesId: category == 'GLASSES' ? null : glassesId,
-    clothesId: category == 'CLOTHES' ? null : clothesId,
-    backgroundId: category == 'BACKGROUND' ? null : backgroundId,
-  );
+  EquippedItems clear() => const EquippedItems();
 }
