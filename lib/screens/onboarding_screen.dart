@@ -78,7 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     },
     {
       'id': 'GIFT_3',
-      'name': '꽃',
+      'name': '꽃다발',
       'icon': Icons.filter_vintage,
       'image': 'flower',
     },
@@ -87,6 +87,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'name': '선글라스',
       'icon': Icons.sunny,
       'image': 'sunglasses',
+    },
+    {
+      'id': 'GIFT_5',
+      'name': '공룡 의상',
+      'icon': Icons.pets,
+      'image': 'dinosaur',
+    },
+    {
+      'id': 'GIFT_6',
+      'name': '과학자 가운',
+      'icon': Icons.science,
+      'image': 'scientist',
+    },
+    {
+      'id': 'GIFT_7',
+      'name': '가수',
+      'icon': Icons.music_note,
+      'image': 'singer',
     },
   ];
 
@@ -610,11 +628,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         children: [
           const SizedBox(height: 20),
           _buildSpeechBubble('$displayName$particle,\n나한테 선물 하나만 골라줘!'),
-          const Spacer(),
-          _buildCharacter(size: 140, overrideImage: currentImage),
-          const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          const SizedBox(height: 16),
+          _buildCharacter(size: 120, overrideImage: currentImage),
+          const SizedBox(height: 16),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 10,
             children: _giftItems.map((item) {
               final isSelected = _selectedGift == item['id'];
               return GestureDetector(
@@ -659,7 +679,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         item['name'] as String,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: isSelected
                               ? AppColors.textMain
