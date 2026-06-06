@@ -21,6 +21,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   List<ReportSummary> _summaries = [];
   ReportDetail? _detail;
   String _childName = '';
+  int? _memberId;
   int _selectedIndex = 0;
 
   bool _isListLoading = true;
@@ -40,7 +41,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Future<void> _fetchChildName() async {
     try {
       final member = await _memberService.getMe();
-      if (mounted) setState(() => _childName = member.nickname ?? member.name);
+      if (mounted) {
+        setState(() {
+          _childName = member.nickname ?? member.name;
+          _memberId = member.id;
+        });
+      }
     } catch (_) {}
   }
 
@@ -74,11 +80,42 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Future<void> _fetchDetail(int reportId) async {
     setState(() => _isDetailLoading = true);
     try {
-      final detail = await _reportService.getReportDetail(reportId);
-      if (mounted) setState(() => _detail = detail);
+      var detail = await _reportService.getReportDetail(reportId);
+      if (mounted) {
+        if (detail.chatSafety == null) {
+          detail = await _fetchSafetyAndMerge(detail);
+        }
+        setState(() => _detail = detail);
+      }
     } catch (_) {
     } finally {
       if (mounted) setState(() => _isDetailLoading = false);
+    }
+  }
+
+  Future<ReportDetail> _fetchSafetyAndMerge(ReportDetail detail) async {
+    final memberId = _memberId;
+    if (memberId == null) return detail;
+    try {
+      final safety = await _reportService.fetchWeeklySafetyReport(
+        memberId: memberId,
+        weekStart: detail.weekStart,
+        weekEnd: detail.weekEnd,
+      );
+      if (safety == null) return detail;
+      return ReportDetail(
+        reportId: detail.reportId,
+        weekStart: detail.weekStart,
+        weekEnd: detail.weekEnd,
+        growth: detail.growth,
+        learningPattern: detail.learningPattern,
+        learningStatus: detail.learningStatus,
+        chatSafety: safety,
+        parentMission: detail.parentMission,
+        keywords: detail.keywords,
+      );
+    } catch (_) {
+      return detail;
     }
   }
 
