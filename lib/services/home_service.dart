@@ -34,10 +34,7 @@ class HomeService {
     }
   }
 
-  Future<TodoItem> createTodo({
-    required String title,
-    int? memberId,
-  }) async {
+  Future<TodoItem> createTodo({required String title, int? memberId}) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/todos');
     final headers = await _getHeaders();
     final body = <String, dynamic>{'title': title};
