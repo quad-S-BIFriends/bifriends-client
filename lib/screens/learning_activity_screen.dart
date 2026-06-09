@@ -272,38 +272,37 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   }
 
   Future<void> _completeCycleAndShow() async {
-    debugPrint(
-      '[Complete] useApi=$_useApiValidation, '
-      'isLastCycle=$_isLastCycle, cycleIdx=$_currentCycleIdx, '
-      'totalCycles=$_totalCycles',
-    );
+    final wasLastCycle = _isLastCycle;
     if (_useApiValidation) {
       try {
-        final cycleResult = widget.subject == 'korean'
-            ? await _koreanService.completeCycle(
+        await (widget.subject == 'korean'
+            ? _koreanService.completeCycle(
                 stepId: widget.levelData.stepId,
                 cycleNumber: _currentCycleIdx + 1,
               )
-            : await _mathService.completeCycle(
+            : _mathService.completeCycle(
                 stepId: widget.levelData.stepId,
                 cycleNumber: _currentCycleIdx + 1,
-              );
-        if (_isLastCycle && cycleResult.isStepCompleted) {
-          widget.subject == 'korean'
-              ? await _koreanService.completeStep(widget.levelData.stepId)
-              : await _mathService.completeStep(widget.levelData.stepId);
-        }
+              ));
       } catch (e) {
-        debugPrint('[Complete] 에러: $e');
+        debugPrint('[Complete] completeCycle 에러: $e');
+      }
+      if (wasLastCycle) {
+        try {
+          await (widget.subject == 'korean'
+              ? _koreanService.completeStep(widget.levelData.stepId)
+              : _mathService.completeStep(widget.levelData.stepId));
+        } catch (e) {
+          debugPrint('[Complete] completeStep 에러: $e');
+        }
       }
     }
+    if (!mounted) return;
     widget.onStepCompleted?.call();
-    if (mounted) {
-      setState(() {
-        _isLastStepCompleted = _isLastCycle;
-        _showSuccessOverlay = true;
-      });
-    }
+    setState(() {
+      _isLastStepCompleted = wasLastCycle;
+      _showSuccessOverlay = true;
+    });
   }
 
   @override
@@ -346,27 +345,11 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   String _resolveConceptImagePath(String image) {
     if (image.isEmpty) return '';
     if (image.startsWith('assets/')) return image;
-
-    // math: "g3_step1_concept_01.png" → grade extracted from filename
-    final mathMatch = RegExp(r'^g(\d)_').firstMatch(image);
-    if (mathMatch != null) {
-      final grade = mathMatch.group(1);
-      return 'assets/images/study_math/grade$grade/$image';
-    }
-
-    // korean passage: "passage_grade3_step1.png"
-    final passageMatch = RegExp(r'^passage_grade(\d)_').firstMatch(image);
-    if (passageMatch != null) {
-      final grade = passageMatch.group(1);
-      return 'assets/images/study_korean/grade$grade/$image';
-    }
-
-    // korean word: "word_jururuk.png" → use user's grade folder
-    if (image.startsWith('word_')) {
-      return 'assets/images/study_korean/grade${widget.grade}/$image';
-    }
-
-    return '';
+    final folder = widget.subject == 'korean' ? 'study_korean' : 'study_math';
+    final filename = (widget.subject == 'math' && !RegExp(r'^g\d_').hasMatch(image))
+        ? 'g${widget.grade}_$image'
+        : image;
+    return 'assets/images/$folder/grade${widget.grade}/$filename';
   }
 
   Widget _buildTopBar() {

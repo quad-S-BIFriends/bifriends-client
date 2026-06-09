@@ -211,6 +211,7 @@ class _KoreanLearningRoadmapState extends State<KoreanLearningRoadmap> {
                   ),
                 ),
               );
+              _loadProgress();
             },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,

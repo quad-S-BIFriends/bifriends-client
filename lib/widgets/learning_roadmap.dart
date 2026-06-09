@@ -236,6 +236,7 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
                   ),
                 ),
               );
+              _loadProgress();
             },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
