@@ -62,30 +62,25 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         _isListLoading = false;
       });
     } catch (_) {
-      if (mounted) _loadMock();
+      if (mounted) setState(() => _isListLoading = false);
     }
-  }
-
-  void _loadMock() {
-    setState(() {
-      _summaries = [ReportDetail.mockSummary()];
-      _detail = ReportDetail.mock();
-      _isListLoading = false;
-    });
   }
 
   Future<void> _fetchDetail(int reportId) async {
     setState(() => _isDetailLoading = true);
     try {
+      debugPrint('[Report] 상세 조회 시작 reportId=$reportId');
       var detail = await _reportService.getReportDetail(reportId);
+      debugPrint('[Report] 상세 조회 성공');
       if (mounted) {
         if (detail.chatSafety == null) {
           detail = await _fetchSafetyAndMerge(detail);
         }
         setState(() => _detail = detail);
       }
-    } catch (_) {
-      if (mounted) setState(() => _detail = ReportDetail.mock());
+    } catch (e, st) {
+      debugPrint('[Report] 상세 조회 실패: $e');
+      debugPrint('[Report] $st');
     } finally {
       if (mounted) setState(() => _isDetailLoading = false);
     }
@@ -129,12 +124,17 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       String fmt(DateTime d) =>
           '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+      final weekStart = fmt(monday);
+      final weekEnd = fmt(sunday);
+      debugPrint('[Report] 생성 요청 시작 memberId=$memberId weekStart=$weekStart weekEnd=$weekEnd');
+
       await _reportService.fetchWeeklyReport(
         memberId: memberId,
-        weekStart: fmt(monday),
-        weekEnd: fmt(sunday),
+        weekStart: weekStart,
+        weekEnd: weekEnd,
       );
 
+      debugPrint('[Report] 생성 요청 완료');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -144,10 +144,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       );
       setState(() => _isListLoading = true);
       await _fetchReportList();
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[Report] 생성 요청 실패: $e');
+      debugPrint('[Report] $st');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('리포트 생성 요청에 실패했어요. 다시 시도해 주세요.')),
+          SnackBar(content: Text('리포트 생성 요청에 실패했어요: $e')),
         );
       }
     } finally {
@@ -169,7 +171,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     if (index == _selectedIndex) return;
     setState(() => _selectedIndex = index);
     final reportId = _summaries[index].reportId;
-    if (reportId == -1) return; // mock 데이터는 API 조회 생략
     _fetchDetail(reportId);
   }
 
@@ -347,11 +348,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            detail.growth.summary,
-            style: const TextStyle(
+            detail.growth.summary.isNotEmpty
+                ? detail.growth.summary
+                : '아직 성장 요약이 준비되지 않았어요.',
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: AppColors.textMain,
+              color: detail.growth.summary.isNotEmpty
+                  ? AppColors.textMain
+                  : AppColors.textSub,
               height: 1.7,
             ),
           ),
@@ -567,11 +572,11 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              subject.summary,
-              style: const TextStyle(
+              subject.summary.isNotEmpty ? subject.summary : '아직 데이터가 없어요.',
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textMain,
+                color: subject.summary.isNotEmpty ? AppColors.textMain : AppColors.textSub,
                 height: 1.6,
               ),
             ),
@@ -612,22 +617,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: level.color,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: level.color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${safety.score}점',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: level.color,
-                  ),
                 ),
               ),
             ],
@@ -874,9 +863,28 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           children: [
             _buildWeekSelector(),
             Expanded(
-              child: _isDetailLoading || _detail == null
+              child: _isDetailLoading
                   ? const Center(
                       child: CircularProgressIndicator(color: AppColors.primary),
+                    )
+                  : _detail == null
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error_outline, size: 40, color: AppColors.textSub),
+                          const SizedBox(height: 12),
+                          const Text(
+                            '리포트를 불러오지 못했어요',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textSub),
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton(
+                            onPressed: () => _fetchDetail(_summaries[_selectedIndex].reportId),
+                            child: const Text('다시 시도'),
+                          ),
+                        ],
+                      ),
                     )
                   : SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
@@ -884,10 +892,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildSummaryCard(_detail!),
-                          if (_detail!.growth.parentTip != null) ...[
-                            const SizedBox(height: 24),
-                            _buildParentTipCard(_detail!.growth.parentTip!),
-                          ],
                           const SizedBox(height: 24),
                           _buildLearningPatternCard(_detail!),
                           const SizedBox(height: 24),
@@ -900,18 +904,16 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          ..._detail!.learningStatus.all.map(
-                            (s) => Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: _buildSubjectCard(s),
-                            ),
-                          ),
+                          ..._detail!.learningStatus.all
+                              .where((s) => s.key != 'emotion')
+                              .map(
+                                (s) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: _buildSubjectCard(s),
+                                ),
+                              ),
                           if (_detail!.chatSafety != null)
                             _buildChatSafetyCard(_detail!.chatSafety!),
-                          if (_detail!.keywords.isNotEmpty) ...[
-                            const SizedBox(height: 16),
-                            _buildKeywordsCard(_detail!.keywords),
-                          ],
                           const SizedBox(height: 16),
                         ],
                       ),

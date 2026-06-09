@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
@@ -20,7 +21,10 @@ class ReportService {
   Future<List<ReportSummary>> getReports() async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/reports');
     final headers = await _getHeaders();
+    debugPrint('[ReportService] GET $url');
     final response = await http.get(url, headers: headers);
+    debugPrint('[ReportService] getReports status: ${response.statusCode}');
+    debugPrint('[ReportService] getReports response: ${utf8.decode(response.bodyBytes)}');
     if (response.statusCode == 200) {
       final json =
           jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
@@ -34,7 +38,10 @@ class ReportService {
   Future<ReportDetail> getReportDetail(int reportId) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/reports/$reportId');
     final headers = await _getHeaders();
+    debugPrint('[ReportService] GET $url');
     final response = await http.get(url, headers: headers);
+    debugPrint('[ReportService] getReportDetail status: ${response.statusCode}');
+    debugPrint('[ReportService] getReportDetail response: ${utf8.decode(response.bodyBytes)}');
     if (response.statusCode == 200) {
       final json =
           jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
@@ -100,12 +107,16 @@ class ReportService {
       'week_end': weekEnd,
       'sections': sections,
     });
+    debugPrint('[ReportService] POST $url');
+    debugPrint('[ReportService] body: $body');
     final response = await http.post(url, headers: headers, body: body);
+    debugPrint('[ReportService] status: ${response.statusCode}');
+    debugPrint('[ReportService] response: ${utf8.decode(response.bodyBytes)}');
     if (response.statusCode == 200) {
       final json =
           jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
       return json['received'] as bool? ?? false;
     }
-    return false;
+    throw Exception('weekly-report 실패: ${response.statusCode} ${utf8.decode(response.bodyBytes)}');
   }
 }
