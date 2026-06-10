@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/mind_model.dart';
 import '../services/mind_service.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_toast.dart';
 import 'friends_activity_screen.dart';
 
 class MindSessionsScreen extends StatefulWidget {
@@ -69,12 +70,7 @@ class _MindSessionsScreenState extends State<MindSessionsScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('세션을 불러오지 못했어요: $e'),
-          backgroundColor: const Color(0xFFD04B44),
-        ),
-      );
+      AppToast.show(context, '세션을 불러오지 못했어요.', isError: true);
     }
   }
 
