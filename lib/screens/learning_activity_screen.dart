@@ -1218,11 +1218,11 @@ class _StepCompletionOverlayState extends State<_StepCompletionOverlay>
                       children: [
                         const Text('🌟', style: TextStyle(fontSize: 90)),
                         const SizedBox(height: 20),
-                        const Text(
+                        Text(
                           '참 잘했어!',
-                          style: TextStyle(
+                          style: GoogleFonts.gaegu(
                             fontSize: 38,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.textMain,
                           ),
                         ),
