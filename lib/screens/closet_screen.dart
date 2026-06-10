@@ -173,12 +173,35 @@ class _ClosetScreenState extends State<ClosetScreen> {
         item: item,
         onEquip: () {
           Navigator.pop(ctx);
-          setState(() => _selectedTab = 0);
-          _toggleEquip(item);
+          _equipAfterPurchase(item);
         },
         onClose: () => Navigator.pop(ctx),
       ),
     );
+  }
+
+  Future<void> _equipAfterPurchase(ClosetItem item) async {
+    if (_isUpdating) return;
+    final previousEquipped = _equipped;
+
+    setState(() {
+      _selectedTab = 0;
+      _isUpdating = true;
+      _equipped = EquippedItems(outfitCode: item.itemCode);
+    });
+
+    try {
+      final newEquipped = await _closetService.equipItem(item.itemCode);
+      if (mounted) setState(() => _equipped = newEquipped);
+    } catch (e) {
+      debugPrint('equip error: $e');
+      if (mounted) {
+        setState(() => _equipped = previousEquipped);
+        AppToast.show(context, '착용에 실패했어요.', isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
   }
 
   @override
