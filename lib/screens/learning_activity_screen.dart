@@ -1171,7 +1171,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               '힌트 ${index + 1}  ',
