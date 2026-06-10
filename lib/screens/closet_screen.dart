@@ -244,7 +244,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
         : 'assets/images/leo_default.png';
 
     return Container(
-      height: 200,
+      height: 240,
       color: AppColors.background,
       child: Stack(
         alignment: Alignment.center,
@@ -254,7 +254,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
             child: Image.asset(
               assetPath,
               key: ValueKey(assetPath),
-              height: 150,
+              height: 200,
               fit: BoxFit.contain,
               errorBuilder: (_, e, s) =>
                   const Text('🦫', style: TextStyle(fontSize: 90)),
@@ -424,7 +424,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
                   child: Center(
                     child: Image.asset(
                       item.localAssetPath,
-                      height: 60,
+                      height: 80,
                       fit: BoxFit.contain,
                     ),
                   ),
