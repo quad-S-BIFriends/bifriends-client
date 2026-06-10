@@ -47,6 +47,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   final KoreanLearningService _koreanService = KoreanLearningService();
 
   bool _useApiValidation = false;
+  bool _hasError = false;
   Passage? _passage;
 
   @override
@@ -61,49 +62,45 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   }
 
   Future<void> _loadContent() async {
-    LearningStep step;
-    if (widget.levelData.stepId > 0) {
-      try {
-        final content = widget.subject == 'korean'
-            ? await _koreanService.getStepContent(widget.levelData.stepId)
-            : await _mathService.getStepContent(widget.levelData.stepId);
-        step = LearningStep(
-          stepId: content.stepId.toString(),
-          stepTitle: content.stepTitle,
-          stepDescription: content.concept,
-          cycles: content.cycles,
-        );
-        _passage = content.passage;
-        _useApiValidation = true;
-        debugPrint('[Content] 로드 성공: ${content.cycles.length}개 사이클');
-        for (final c in content.cycles) {
-          debugPrint(
-            '[Content]  ${c.cycleId} type=${c.type} slides=${c.slides?.length ?? 'null'}',
-          );
-        }
-      } catch (e, st) {
-        debugPrint('[Content] 파싱 실패: $e');
-        debugPrint('[Content] $st');
-        step = widget.subject == 'korean'
-            ? mockKoreanStepForLevel(widget.levelData.level)
-            : mockStepForLevel(widget.levelData.level);
-        _useApiValidation = false;
-      }
-    } else {
-      step = widget.subject == 'korean'
-          ? mockKoreanStepForLevel(widget.levelData.level)
-          : mockStepForLevel(widget.levelData.level);
-      _useApiValidation = false;
+    if (widget.levelData.stepId <= 0) {
+      if (!mounted) return;
+      setState(() {
+        _hasError = true;
+        _contentLoading = false;
+      });
+      return;
     }
-    if (!mounted) return;
-    setState(() {
-      _step = step;
-      _currentCycleIdx = (widget.initialStep - 1).clamp(
-        0,
-        step.cycles.length - 1,
+
+    try {
+      final content = widget.subject == 'korean'
+          ? await _koreanService.getStepContent(widget.levelData.stepId)
+          : await _mathService.getStepContent(widget.levelData.stepId);
+      final step = LearningStep(
+        stepId: content.stepId.toString(),
+        stepTitle: content.stepTitle,
+        stepDescription: content.concept,
+        cycles: content.cycles,
       );
-      _contentLoading = false;
-    });
+      _passage = content.passage;
+      _useApiValidation = true;
+      if (!mounted) return;
+      setState(() {
+        _step = step;
+        _currentCycleIdx = (widget.initialStep - 1).clamp(
+          0,
+          step.cycles.length - 1,
+        );
+        _contentLoading = false;
+      });
+    } catch (e, st) {
+      debugPrint('[Content] 로드 실패: $e');
+      debugPrint('[Content] $st');
+      if (!mounted) return;
+      setState(() {
+        _hasError = true;
+        _contentLoading = false;
+      });
+    }
   }
 
   @override
@@ -119,7 +116,6 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
   bool get _isLastQuestion =>
       _currentQuestionIdx >= _currentCycle.questionCount - 1;
 
-  // Only used for Korean / mock data local validation
   bool get _isCurrentAnswerCorrectLocal {
     switch (_currentCycle.type) {
       case CycleType.concept:
@@ -293,8 +289,62 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_contentLoading || _step == null) {
+    if (_contentLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (_hasError || _step == null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.wifi_off_rounded, size: 56, color: AppColors.borderLight),
+                const SizedBox(height: 20),
+                const Text(
+                  '학습 내용을 불러오지 못했어요',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMain,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '잠시 후 다시 시도해 주세요.',
+                  style: TextStyle(fontSize: 14, color: AppColors.textSub),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _hasError = false;
+                      _contentLoading = true;
+                    });
+                    _loadContent();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    '다시 시도',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('돌아가기', style: TextStyle(color: AppColors.textSub)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -474,7 +524,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                   _resolveConceptImagePath(slide.image),
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  errorBuilder: (ctx, e, st) => const SizedBox.shrink(),
                 ),
               ),
             ),
@@ -711,8 +761,9 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
   List<RichSpan> _splitAtPeriods(List<RichSpan> spans) {
     return spans.map((span) {
-      if (span is PlainSpan)
+      if (span is PlainSpan) {
         return PlainSpan(span.value.replaceAll('. ', '.\n'));
+      }
       return span;
     }).toList();
   }
