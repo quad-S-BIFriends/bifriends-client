@@ -454,10 +454,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
             const SizedBox(height: 16),
             _buildCharacterImage(step1.imageUrl, imageType: 'body'),
             const SizedBox(height: 24),
-            _buildSectionBlock(
-              label: '우리 몸의 느낌',
-              content: step1.bodySensation,
-            ),
+            _buildSectionBlock(label: '우리 몸의 느낌', content: step1.bodySensation),
             const SizedBox(height: 16),
             _buildSectionBlock(
               label: '이럴 때 이런 마음이 들어',
@@ -471,8 +468,9 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.textMain,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor:
-                      AppColors.textMain.withValues(alpha: 0.5),
+                  disabledBackgroundColor: AppColors.textMain.withValues(
+                    alpha: 0.5,
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
@@ -496,8 +494,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
     );
   }
 
-  Widget _buildCharacterImage(String? imageUrl,
-      {String imageType = 'body'}) {
+  Widget _buildCharacterImage(String? imageUrl, {String imageType = 'body'}) {
     final fallbackPath = imageType == 'face'
         ? _emotionType.step2Path
         : _emotionType.step1Path;
@@ -590,9 +587,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
               _step2SelectedIndex != -1 &&
               _step2SelectedIndex != data.correctIndex) ...[
             const SizedBox(height: 12),
-            _buildWrongExplanation(
-              data.choices[_step2SelectedIndex].feedback,
-            ),
+            _buildWrongExplanation(data.choices[_step2SelectedIndex].feedback),
             const SizedBox(height: 8),
             _buildRetryHint(data.retryMessage),
           ],
@@ -862,8 +857,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
                   if (_step2SelectedIndex == -1) return;
                   setState(() {
                     _step2Evaluated = true;
-                    _step2IsCorrect =
-                        _step2SelectedIndex == data.correctIndex;
+                    _step2IsCorrect = _step2SelectedIndex == data.correctIndex;
                   });
                 }
               },
@@ -882,8 +876,8 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           child: Text(
             isConfirmed
                 ? (data.nextButtonText.isNotEmpty
-                    ? data.nextButtonText
-                    : '다음으로')
+                      ? data.nextButtonText
+                      : '다음으로')
                 : '이 마음 같아! 💕',
             key: ValueKey(isConfirmed),
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -1094,9 +1088,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
                   width: active ? 20 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: active
-                        ? AppColors.primary
-                        : const Color(0xFFD9D3CB),
+                    color: active ? AppColors.primary : const Color(0xFFD9D3CB),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 );
@@ -1135,11 +1127,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Center(
-          child: Icon(
-            Icons.image_outlined,
-            size: 56,
-            color: AppColors.textSub,
-          ),
+          child: Icon(Icons.image_outlined, size: 56, color: AppColors.textSub),
         ),
       ),
     );
@@ -1324,8 +1312,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
                   if (_step3SelectedIndex == -1) return;
                   setState(() {
                     _step3Evaluated = true;
-                    _step3IsCorrect =
-                        _step3SelectedIndex == data.correctIndex;
+                    _step3IsCorrect = _step3SelectedIndex == data.correctIndex;
                   });
                 }
               },
@@ -1344,14 +1331,11 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           child: Text(
             isConfirmed
                 ? (data.nextButtonText.isNotEmpty
-                    ? data.nextButtonText
-                    : '다음 이야기 보기')
+                      ? data.nextButtonText
+                      : '다음 이야기 보기')
                 : '이게 이유야! 🔍',
             key: ValueKey(isConfirmed),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
         ),
       ),
@@ -1600,8 +1584,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
                   if (_step4SelectedIndex == -1) return;
                   setState(() {
                     _step4Evaluated = true;
-                    _step4IsCorrect =
-                        _step4SelectedIndex == data.correctIndex;
+                    _step4IsCorrect = _step4SelectedIndex == data.correctIndex;
                   });
                 }
               },
@@ -1620,14 +1603,11 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           child: Text(
             isConfirmed
                 ? (data.completeButtonText.isNotEmpty
-                    ? data.completeButtonText
-                    : '완료! 🎯')
+                      ? data.completeButtonText
+                      : '완료! 🎯')
                 : '이렇게 말할게요! 💬',
             key: ValueKey(isConfirmed),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
         ),
       ),

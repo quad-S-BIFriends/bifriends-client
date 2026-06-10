@@ -435,12 +435,16 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
         ? '낱말 카드'
         : '개념 이야기';
 
+    final isWordCard = _currentCycle.type == CycleType.wordCard;
+
     return SingleChildScrollView(
       key: key,
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
       physics: const BouncingScrollPhysics(),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: isWordCard
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -452,7 +456,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
               conceptLabel,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
                 color: AppColors.primary,
               ),
             ),
@@ -472,15 +476,38 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
               ),
             ),
           const SizedBox(height: 28),
-          RichInlineText(
-            spans: slide.spans,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textMain,
-              height: 1.6,
+          if (isWordCard && slide.word != null) ...[
+            Text(
+              slide.word!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMain,
+                height: 1.2,
+              ),
             ),
-          ),
+            const SizedBox(height: 14),
+            RichInlineText(
+              spans: slide.spans,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSub,
+                height: 1.6,
+              ),
+            ),
+          ] else
+            RichInlineText(
+              spans: slide.spans,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textMain,
+                height: 1.6,
+              ),
+            ),
           const SizedBox(height: 20),
           _buildQuestionDots(),
         ],
