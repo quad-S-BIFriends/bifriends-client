@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/growth_report_model.dart';
-import '../models/guardian_mission_model.dart';
 import '../services/auth_service.dart';
 import '../services/report_service.dart';
 import '../services/member_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_toast.dart';
-import '../widgets/guardian_mission_sheet.dart';
 import 'login_screen.dart';
 
 class ParentDashboardScreen extends StatefulWidget {
@@ -130,7 +128,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
       final weekStart = fmt(monday);
       final weekEnd = fmt(sunday);
-      debugPrint('[Report] 생성 요청 시작 memberId=$memberId weekStart=$weekStart weekEnd=$weekEnd');
+      debugPrint(
+        '[Report] 생성 요청 시작 memberId=$memberId weekStart=$weekStart weekEnd=$weekEnd',
+      );
 
       await _reportService.fetchWeeklyReport(
         memberId: memberId,
@@ -169,18 +169,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     setState(() => _selectedIndex = index);
     final reportId = _summaries[index].reportId;
     _fetchDetail(reportId);
-  }
-
-  void _onMissionTap() {
-    if (_summaries.isEmpty) return;
-    final mission = _detail?.parentMission ??
-        const GuardianMission(praisePhrase: '', activitySuggestion: '');
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => GuardianMissionSheet(mission: mission),
-    );
   }
 
   void _showAccountSheet() {
@@ -303,7 +291,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             },
             child: const Text(
               '탈퇴하기',
-              style: TextStyle(color: Color(0xFFE53935), fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: Color(0xFFE53935),
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -483,8 +474,11 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.tips_and_updates_outlined,
-                  color: AppColors.primary, size: 18),
+              const Icon(
+                Icons.tips_and_updates_outlined,
+                color: AppColors.primary,
+                size: 18,
+              ),
               const SizedBox(width: 6),
               const Text(
                 '부모 팁',
@@ -543,8 +537,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     value: pattern.learningDays.isEmpty
                         ? '-'
                         : pattern.learningDays
-                            .map((d) => _allDays[d - 1])
-                            .join(', '),
+                              .map((d) => _allDays[d - 1])
+                              .join(', '),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -666,20 +660,42 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           ),
           const SizedBox(height: 14),
           if (subject.wellDone.isNotEmpty) ...[
-            _buildSubjectRow(icon: Icons.thumb_up_outlined, color: const Color(0xFF4CAF50), label: '잘한 점', text: subject.wellDone),
+            _buildSubjectRow(
+              icon: Icons.thumb_up_outlined,
+              color: const Color(0xFF4CAF50),
+              label: '잘한 점',
+              text: subject.wellDone,
+            ),
             const SizedBox(height: 10),
           ],
           if (subject.struggled.isNotEmpty) ...[
-            _buildSubjectRow(icon: Icons.flag_outlined, color: const Color(0xFFF07D4F), label: '아쉬운 점', text: subject.struggled),
+            _buildSubjectRow(
+              icon: Icons.flag_outlined,
+              color: const Color(0xFFF07D4F),
+              label: '아쉬운 점',
+              text: subject.struggled,
+            ),
           ],
           if (subject.wellDone.isEmpty && subject.struggled.isEmpty)
-            Text('아직 데이터가 없어요.', style: TextStyle(fontSize: 14, color: AppColors.textSub, height: 1.6)),
+            Text(
+              '아직 데이터가 없어요.',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSub,
+                height: 1.6,
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildSubjectRow({required IconData icon, required Color color, required String label, required String text}) {
+  Widget _buildSubjectRow({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String text,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -695,7 +711,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textMain, height: 1.6),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textMain,
+                height: 1.6,
+              ),
             ),
           ),
         ],
@@ -793,7 +814,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             runSpacing: 8,
             children: keywords.map((kw) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
@@ -817,37 +841,149 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     );
   }
 
-  Widget _buildMissionButton() {
-    final hasMission = _detail?.parentMission != null ||
-        (_summaries.isNotEmpty && _summaries[_selectedIndex].hasMission);
+  Widget _buildParentMissionCard() {
+    final mission = _detail?.parentMission;
+    final isReady = mission?.isReady ?? false;
 
-    return ElevatedButton(
-      onPressed: _onMissionTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        disabledBackgroundColor: AppColors.primaryDisabled,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        elevation: 4,
-        shadowColor: Colors.black.withValues(alpha: 0.2),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.28),
+          width: 1.5,
+        ),
       ),
-      child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.card_giftcard, size: 20),
-                const SizedBox(width: 10),
-                Text(
-                  hasMission ? '이번주 보호자 미션 보기' : '이번주 보호자 미션 받기',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 10),
-                const Icon(Icons.auto_awesome, size: 16),
-              ],
+                child: const Icon(
+                  Icons.card_giftcard,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                '이번 주 보호자 미션',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMain,
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (!isReady) ...[
+            const Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.hourglass_empty_rounded,
+                    size: 36,
+                    color: AppColors.textSub,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '미션이 아직 준비되지 않았어요',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMain,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '리포트 생성 후 잠시 기다리면 만들어져요!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSub,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ] else ...[
+            _buildMissionSection(
+              icon: Icons.format_quote_rounded,
+              label: '아이에게 건넬 칭찬 멘트',
+              text: mission!.praisePhrase,
+            ),
+            const SizedBox(height: 12),
+            _buildMissionSection(
+              icon: Icons.emoji_objects_outlined,
+              label: '함께하면 좋은 활동',
+              text: mission.activitySuggestion,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMissionSection({
+    required IconData icon,
+    required String label,
+    required String text,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 14, color: AppColors.primary),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMain,
+              height: 1.6,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -964,75 +1100,75 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildHistoryView() {
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildWeekSelector(),
-            Expanded(
-              child: _isDetailLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: AppColors.primary),
-                    )
-                  : _detail == null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.error_outline, size: 40, color: AppColors.textSub),
-                          const SizedBox(height: 12),
-                          const Text(
-                            '리포트를 불러오지 못했어요',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textSub),
-                          ),
-                          const SizedBox(height: 16),
-                          TextButton(
-                            onPressed: () => _fetchDetail(_summaries[_selectedIndex].reportId),
-                            child: const Text('다시 시도'),
-                          ),
-                        ],
+        _buildWeekSelector(),
+        Expanded(
+          child: _isDetailLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )
+              : _detail == null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 40,
+                        color: AppColors.textSub,
                       ),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSummaryCard(_detail!),
-                          const SizedBox(height: 24),
-                          _buildLearningPatternCard(_detail!),
-                          const SizedBox(height: 24),
-                          const Text(
-                            '학습 현황',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textMain,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ..._detail!.learningStatus.all
-                              .map(
-                                (s) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: _buildSubjectCard(s),
-                                ),
-                              ),
-                          if (_detail!.chatSafety != null)
-                            _buildChatSafetyCard(_detail!.chatSafety!),
-                          const SizedBox(height: 16),
-                        ],
+                      const SizedBox(height: 12),
+                      const Text(
+                        '리포트를 불러오지 못했어요',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSub,
+                        ),
                       ),
-                    ),
-            ),
-          ],
-        ),
-        Positioned(
-          bottom: 20,
-          left: 24,
-          right: 24,
-          child: _buildMissionButton(),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () =>
+                            _fetchDetail(_summaries[_selectedIndex].reportId),
+                        child: const Text('다시 시도'),
+                      ),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildParentMissionCard(),
+                      const SizedBox(height: 24),
+                      _buildSummaryCard(_detail!),
+                      const SizedBox(height: 24),
+                      _buildLearningPatternCard(_detail!),
+                      const SizedBox(height: 24),
+                      const Text(
+                        '학습 현황',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textMain,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ..._detail!.learningStatus.all.map(
+                        (s) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _buildSubjectCard(s),
+                        ),
+                      ),
+                      if (_detail!.chatSafety != null)
+                        _buildChatSafetyCard(_detail!.chatSafety!),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
         ),
       ],
     );
