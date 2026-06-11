@@ -14,6 +14,7 @@ class LearningActivityScreen extends StatefulWidget {
   final VoidCallback? onStepCompleted;
   final String subject;
   final int grade;
+  final bool isReview;
 
   const LearningActivityScreen({
     super.key,
@@ -22,6 +23,7 @@ class LearningActivityScreen extends StatefulWidget {
     this.onStepCompleted,
     this.subject = 'math',
     this.grade = 3,
+    this.isReview = false,
   });
 
   @override
@@ -237,8 +239,16 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
         return;
       }
       _advanceContent();
-    } catch (_) {
-      if (mounted) setState(() => _isValidating = false);
+    } catch (e) {
+      debugPrint('[Validate] 에러: $e');
+      if (!mounted) return;
+      setState(() => _isValidating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('네트워크 오류가 발생했어요. 다시 시도해줘!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -255,7 +265,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
   Future<void> _completeCycleAndShow() async {
     final wasLastCycle = _isLastCycle;
-    if (_useApiValidation) {
+    if (_useApiValidation && !widget.isReview) {
       try {
         await (widget.subject == 'korean'
             ? _koreanService.completeCycle(
@@ -280,6 +290,16 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
       }
     }
     if (!mounted) return;
+
+    if (widget.isReview && !wasLastCycle) {
+      setState(() {
+        _currentCycleIdx++;
+        _currentQuestionIdx = 0;
+        _resetQuestionState();
+      });
+      return;
+    }
+
     widget.onStepCompleted?.call();
     setState(() {
       _isLastStepCompleted = wasLastCycle;

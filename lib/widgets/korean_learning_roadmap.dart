@@ -206,6 +206,7 @@ class _KoreanLearningRoadmapState extends State<KoreanLearningRoadmap> {
                     initialStep: initialStep,
                     subject: 'korean',
                     grade: _grade,
+                    isReview: isComplete,
                     onStepCompleted: level.status != LevelStatus.locked
                         ? () {
                             _loadProgress();

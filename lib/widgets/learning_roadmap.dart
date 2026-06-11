@@ -231,6 +231,7 @@ class _LearningRoadmapState extends State<LearningRoadmap> {
                     levelData: level,
                     initialStep: initialStep,
                     grade: _grade,
+                    isReview: isComplete,
                     onStepCompleted: level.status != LevelStatus.locked
                         ? () {
                             _loadProgress();
