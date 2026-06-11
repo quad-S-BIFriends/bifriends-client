@@ -9,13 +9,17 @@ import '../theme/app_colors.dart';
 import '../screens/learning_activity_screen.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/korean_learning_roadmap.dart';
-import '../widgets/learning_roadmap.dart' show LevelData, LevelStatus;
+import '../widgets/learning_roadmap.dart' show LearningRoadmap, LevelData, LevelStatus;
 
 class ConversationScreen extends StatefulWidget {
   final String? pendingTodoId;
   final VoidCallback? onTodoCompleted;
 
-  const ConversationScreen({super.key, this.pendingTodoId, this.onTodoCompleted});
+  const ConversationScreen({
+    super.key,
+    this.pendingTodoId,
+    this.onTodoCompleted,
+  });
 
   @override
   State<ConversationScreen> createState() => _ConversationScreenState();
@@ -62,7 +66,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
   @override
   void didUpdateWidget(ConversationScreen old) {
     super.didUpdateWidget(old);
-    if (widget.pendingTodoId != null && widget.pendingTodoId != old.pendingTodoId) {
+    if (widget.pendingTodoId != null &&
+        widget.pendingTodoId != old.pendingTodoId) {
       _pendingTodoId = widget.pendingTodoId;
     }
   }
@@ -291,10 +296,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
               '네, 지울게요',
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -409,7 +411,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       ),
                     ),
                     Text(
-                      _sessions.isEmpty ? '대화 시작하기' : '${_sessions.length}개의 대화',
+                      _sessions.isEmpty
+                          ? '대화 시작하기'
+                          : '${_sessions.length}개의 대화',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
@@ -638,16 +642,22 @@ class _ConversationScreenState extends State<ConversationScreen> {
         ),
       );
     } else if (cta.type == 'navigate_to_subject') {
+      final isMath = cta.subject == 'math';
       _pushScreen(
         Scaffold(
           appBar: AppBar(
-            title: const Text('국어 공부방'),
+            title: Text(
+              isMath ? '수학 공부방' : '국어 공부방',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
             backgroundColor: AppColors.background,
             foregroundColor: AppColors.textMain,
             elevation: 0,
           ),
           backgroundColor: AppColors.background,
-          body: const KoreanLearningRoadmap(),
+          body: isMath
+              ? const LearningRoadmap()
+              : const KoreanLearningRoadmap(),
         ),
       );
     }
@@ -789,7 +799,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   Widget _buildHistoryPanel() {
-    final activeSession = _sessions.where((s) => s.id == _sessionId).firstOrNull;
+    final activeSession = _sessions
+        .where((s) => s.id == _sessionId)
+        .firstOrNull;
     final pastSessions = _sessions.where((s) => s.id != _sessionId).toList();
 
     return Container(
@@ -874,100 +886,97 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       ),
                     )
                   : _sessions.isEmpty
-                      ? const Center(
-                          child: Text(
-                            '아직 대화 기록이 없어요',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSub,
+                  ? const Center(
+                      child: Text(
+                        '아직 대화 기록이 없어요',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSub,
+                        ),
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                      children: [
+                        if (activeSession != null) ...[
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.textMain,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () => setState(
+                                      () => _isSessionsExpanded =
+                                          !_isSessionsExpanded,
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 14,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.chat_bubble_outline,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              activeSession.title,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Icon(
+                                            _isSessionsExpanded
+                                                ? Icons.keyboard_arrow_up
+                                                : Icons.keyboard_arrow_down,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.8,
+                                            ),
+                                            size: 20,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    size: 18,
+                                  ),
+                                  onPressed: () =>
+                                      _confirmDeleteSession(activeSession),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
+                                  constraints: const BoxConstraints(),
+                                ),
+                              ],
                             ),
                           ),
-                        )
-                      : ListView(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                          children: [
-                            if (activeSession != null) ...[
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: AppColors.textMain,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: GestureDetector(
-                                        onTap: () => setState(
-                                          () => _isSessionsExpanded =
-                                              !_isSessionsExpanded,
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 14,
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.chat_bubble_outline,
-                                                color: Colors.white,
-                                                size: 18,
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Text(
-                                                  activeSession.title,
-                                                  style: const TextStyle(
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: Colors.white,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Icon(
-                                                _isSessionsExpanded
-                                                    ? Icons.keyboard_arrow_up
-                                                    : Icons.keyboard_arrow_down,
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.8,
-                                                ),
-                                                size: 20,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.delete_outline,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        size: 18,
-                                      ),
-                                      onPressed: () =>
-                                          _confirmDeleteSession(activeSession),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                      ),
-                                      constraints: const BoxConstraints(),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (_isSessionsExpanded &&
-                                  pastSessions.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                ...pastSessions.map(_buildSessionListItem),
-                              ],
-                            ] else
-                              ...pastSessions.map(_buildSessionListItem),
+                          if (_isSessionsExpanded &&
+                              pastSessions.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            ...pastSessions.map(_buildSessionListItem),
                           ],
-                        ),
+                        ] else
+                          ...pastSessions.map(_buildSessionListItem),
+                      ],
+                    ),
             ),
           ],
         ),
