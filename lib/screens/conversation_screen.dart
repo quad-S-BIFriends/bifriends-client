@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/chat_model.dart';
 import '../models/member_model.dart';
@@ -6,10 +7,9 @@ import '../services/home_service.dart';
 import '../services/member_service.dart';
 import '../services/stt_service.dart';
 import '../theme/app_colors.dart';
-import '../screens/learning_activity_screen.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/korean_learning_roadmap.dart';
-import '../widgets/learning_roadmap.dart' show LearningRoadmap, LevelData, LevelStatus;
+import '../widgets/learning_roadmap.dart' show LearningRoadmap;
 
 class ConversationScreen extends StatefulWidget {
   final String? pendingTodoId;
@@ -460,16 +460,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: _leoBubbleDecoration,
-        child: const SizedBox(
-          width: 24,
-          height: 16,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: AppColors.primary,
-          ),
-        ),
+        child: const _TypingDots(),
       ),
     );
   }
@@ -625,42 +618,24 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   void _handleCtaTap(CtaAction cta) {
-    if (cta.type == 'navigate_to_step') {
-      _pushScreen(
-        LearningActivityScreen(
-          levelData: LevelData(
-            level: cta.stepId ?? 1,
-            stepId: cta.stepId ?? 1,
-            title: cta.label,
-            description: '',
-            subtitle: '',
-            status: LevelStatus.current,
-            completedCycles: const [],
-          ),
-          initialStep: cta.cycleNumber ?? 1,
-          subject: cta.subject,
-        ),
-      );
-    } else if (cta.type == 'navigate_to_subject') {
-      final isMath = cta.subject == 'math';
-      _pushScreen(
-        Scaffold(
-          appBar: AppBar(
-            title: Text(
-              isMath ? '수학 공부방' : '국어 공부방',
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            backgroundColor: AppColors.background,
-            foregroundColor: AppColors.textMain,
-            elevation: 0,
+    final isMath = cta.subject == 'math';
+    _pushScreen(
+      Scaffold(
+        appBar: AppBar(
+          title: Text(
+            isMath ? '수학 공부방' : '국어 공부방',
+            style: const TextStyle(fontWeight: FontWeight.w800),
           ),
           backgroundColor: AppColors.background,
-          body: isMath
-              ? const LearningRoadmap()
-              : const KoreanLearningRoadmap(),
+          foregroundColor: AppColors.textMain,
+          elevation: 0,
         ),
-      );
-    }
+        backgroundColor: AppColors.background,
+        body: isMath
+            ? const LearningRoadmap()
+            : const KoreanLearningRoadmap(),
+      ),
+    );
   }
 
   void _showTodosSnackbar(List<TodoCreated> todos) {
@@ -981,6 +956,82 @@ class _ConversationScreenState extends State<ConversationScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  static const _dotCount = 3;
+  static const _dotSize = 7.0;
+  static const _dotSpacing = 5.0;
+  static const _jumpHeight = 6.0;
+  // each dot starts its jump offset by this fraction of the cycle
+  static const _stagger = 0.2;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  double _dotOffset(int index) {
+    // shift each dot's phase by _stagger; clamp to [0,1) with modulo
+    final phase = (_controller.value - index * _stagger) % 1.0;
+    // smooth up-and-down: sin curve over first half of cycle, 0 for second half
+    if (phase < 0.5) {
+      return -math.sin(phase * math.pi * 2) * _jumpHeight;
+    }
+    return 0.0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, _) {
+        return SizedBox(
+          height: _dotSize + _jumpHeight,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (int i = 0; i < _dotCount; i++) ...[
+                if (i > 0) const SizedBox(width: _dotSpacing),
+                Transform.translate(
+                  offset: Offset(0, _dotOffset(i)),
+                  child: Container(
+                    width: _dotSize,
+                    height: _dotSize,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

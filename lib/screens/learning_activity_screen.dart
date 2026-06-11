@@ -15,6 +15,7 @@ class LearningActivityScreen extends StatefulWidget {
   final String subject;
   final int grade;
   final bool isReview;
+  final bool isDemoMode;
 
   const LearningActivityScreen({
     super.key,
@@ -24,6 +25,7 @@ class LearningActivityScreen extends StatefulWidget {
     this.subject = 'math',
     this.grade = 3,
     this.isReview = false,
+    this.isDemoMode = false,
   });
 
   @override
@@ -179,6 +181,12 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
     if (_currentCycle.type == CycleType.concept ||
         _currentCycle.type == CycleType.wordCard) {
+      _advanceContent();
+      return;
+    }
+
+    // 시연 모드: 답변 검증 없이 바로 진행
+    if (widget.isDemoMode) {
       _advanceContent();
       return;
     }
@@ -423,6 +431,16 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
     return 'assets/images/$folder/grade${widget.grade}/$filename';
   }
 
+  // grade4 step1 cycle2 전용 시각화 이미지 경로 (해당 조건 외에는 null 반환)
+  String? _questionVisualizationImage() {
+    if (widget.subject != 'math') return null;
+    if (widget.grade != 4) return null;
+    if (widget.levelData.level != 1) return null;
+    if (_currentCycleIdx != 1) return null;
+    return 'assets/images/study_math/grade4/'
+        'g4_step1_cycle2_q${_currentQuestionIdx + 1}.png';
+  }
+
   Widget _buildTopBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -606,6 +624,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
   Widget _buildChoiceQuestion({required Key key}) {
     final q = _currentCycle.choiceQuestions![_currentQuestionIdx];
+    final vizImage = _questionVisualizationImage();
 
     return SingleChildScrollView(
       key: key,
@@ -617,6 +636,17 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
           _buildPassagePanel(),
           _buildQuestionLabel('문제 풀기'),
           const SizedBox(height: 20),
+          if (vizImage != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                vizImage,
+                width: double.infinity,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
@@ -800,6 +830,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
   Widget _buildShortAnswerQuestion({required Key key}) {
     final q = _currentCycle.shortAnswerQuestions![_currentQuestionIdx];
+    final vizImage = _questionVisualizationImage();
 
     return SingleChildScrollView(
       key: key,
@@ -811,6 +842,17 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
           _buildPassagePanel(),
           _buildQuestionLabel('직접 써보기'),
           const SizedBox(height: 20),
+          if (vizImage != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                vizImage,
+                width: double.infinity,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
