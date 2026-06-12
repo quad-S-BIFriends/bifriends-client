@@ -20,7 +20,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   // 역할극 주제는 API 미구현 - mock 데이터 사용
   static const _mockRoleplayTopic =
       '이번 주 배운 \'공손하게 부탁하기\' 화용언어 표현을 연습해봐요!\n\n'
-      '🎭 상황: 마트에서 물건 찾기\n'
+      '🎭 상황 - 마트에서 물건 찾기\n'
       '아이: "저기요, 이거 어디 있어요? 하나만 주실 수 있어요?"\n'
       '부모님: 점원이 되어 친절하게 답해주세요 😊';
 
@@ -170,6 +170,11 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     if (_summaries.isNotEmpty && _detail?.reportId != _summaries[0].reportId) {
       _fetchDetail(_summaries[0].reportId);
     }
+  }
+
+  bool _isUnpreparedWeek(int index) {
+    if (_summaries.isEmpty || index >= _summaries.length) return false;
+    return _summaries[index].weekStart == '2026-06-08';
   }
 
   void _onSelectReport(int index) {
@@ -1109,6 +1114,44 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     );
   }
 
+  Widget _buildUnpreparedView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.hourglass_empty_rounded,
+              size: 56,
+              color: AppColors.borderLight,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              '아직 준비되지 않았어요',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textMain,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '이번 주 리포트는 아직 분석 중이에요.\n조금만 기다려 주세요!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSub,
+                height: 1.6,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildGenerationView() {
     return Center(
       child: Padding(
@@ -1145,7 +1188,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isGenerating ? null : _onGenerateReport,
+                onPressed: _isGenerating
+                    ? null
+                    : () => AppToast.show(
+                        context,
+                        '이번 주 리포트는 아직 준비 중이에요. 조금만 기다려 주세요!',
+                      ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   disabledBackgroundColor: AppColors.primaryDisabled,
@@ -1231,6 +1279,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               ? const Center(
                   child: CircularProgressIndicator(color: AppColors.primary),
                 )
+              : _isUnpreparedWeek(_selectedIndex)
+              ? _buildUnpreparedView()
               : _detail == null
               ? Center(
                   child: Column(
