@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/growth_report_model.dart';
+import '../models/guardian_mission_model.dart';
 import '../services/auth_service.dart';
 import '../services/report_service.dart';
 import '../services/member_service.dart';
@@ -17,19 +18,14 @@ class ParentDashboardScreen extends StatefulWidget {
 class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   static const _allDays = LearningPattern.allDayLabels;
 
-  // 역할극 주제는 API 미구현 - mock 데이터 사용
-  static const _mockRoleplayTopic =
-      '이번 주 배운 \'공손하게 부탁하기\' 화용언어 표현을 연습해봐요!\n\n'
-      '🎭 상황 - 마트에서 물건 찾기\n'
-      '아이: "저기요, 이거 어디 있어요? 하나만 주실 수 있어요?"\n'
-      '부모님: 점원이 되어 친절하게 답해주세요 😊';
-
   final _reportService = ReportService();
   final _memberService = MemberService();
   final _authService = AuthService();
 
   List<ReportSummary> _summaries = [];
   ReportDetail? _detail;
+  LearningSummary? _learningSummary;
+  GuardianMission? _parentMission;
   String _childName = '';
   int? _memberId;
   int _selectedIndex = 0;
@@ -47,7 +43,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Future<void> _fetchInitialData() async {
-    await Future.wait([_fetchChildName(), _fetchReportList()]);
+    await _fetchChildName();
+    await _fetchReportList();
   }
 
   Future<void> _fetchChildName() async {
@@ -77,17 +74,20 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Future<void> _fetchDetail(int reportId) async {
-    setState(() => _isDetailLoading = true);
+    setState(() {
+      _isDetailLoading = true;
+      _learningSummary = null;
+      _parentMission = null;
+    });
     try {
       debugPrint('[Report] 상세 조회 시작 reportId=$reportId');
-      var detail = await _reportService.getReportDetail(reportId);
+      final detail = await _reportService.getReportDetail(reportId);
       debugPrint('[Report] 상세 조회 성공');
-      if (mounted) {
-        if (detail.chatSafety == null) {
-          detail = await _fetchSafetyAndMerge(detail);
-        }
-        setState(() => _detail = detail);
-      }
+      if (!mounted) return;
+      setState(() => _detail = detail);
+
+      _fetchLearningSummary(detail.weekStart, detail.weekEnd);
+      _fetchParentMission(reportId);
     } catch (e, st) {
       debugPrint('[Report] 상세 조회 실패: $e');
       debugPrint('[Report] $st');
@@ -96,29 +96,34 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     }
   }
 
-  Future<ReportDetail> _fetchSafetyAndMerge(ReportDetail detail) async {
-    final memberId = _memberId;
-    if (memberId == null) return detail;
+  Future<void> _fetchParentMission(int reportId) async {
     try {
-      final safety = await _reportService.fetchWeeklySafetyReport(
+      final mission = await _reportService.getParentMission(reportId);
+      if (mounted) setState(() => _parentMission = mission);
+    } catch (e) {
+      debugPrint('[Report] parent-mission 조회 실패: $e');
+    }
+  }
+
+  Future<void> _fetchLearningSummary(String weekStart, String weekEnd) async {
+    final memberId = _memberId;
+    if (memberId == null) return;
+    try {
+      final summary = await _reportService.getLearningSummary(
         memberId: memberId,
-        weekStart: detail.weekStart,
-        weekEnd: detail.weekEnd,
+        from: weekStart,
+        to: weekEnd,
       );
-      if (safety == null) return detail;
-      return ReportDetail(
-        reportId: detail.reportId,
-        weekStart: detail.weekStart,
-        weekEnd: detail.weekEnd,
-        growth: detail.growth,
-        learningPattern: detail.learningPattern,
-        learningStatus: detail.learningStatus,
-        chatSafety: safety,
-        parentMission: detail.parentMission,
-        keywords: detail.keywords,
-      );
-    } catch (_) {
-      return detail;
+      if (mounted) {
+        setState(() {
+          _learningSummary = summary;
+          if (summary.nickname.isNotEmpty && _childName.isEmpty) {
+            _childName = summary.nickname;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('[Report] learning-summary 조회 실패: $e');
     }
   }
 
@@ -134,29 +139,20 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       String fmt(DateTime d) =>
           '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-      final weekStart = fmt(monday);
-      final weekEnd = fmt(sunday);
-      debugPrint(
-        '[Report] 생성 요청 시작 memberId=$memberId weekStart=$weekStart weekEnd=$weekEnd',
-      );
-
       await _reportService.fetchWeeklyReport(
         memberId: memberId,
-        weekStart: weekStart,
-        weekEnd: weekEnd,
+        weekStart: fmt(monday),
+        weekEnd: fmt(sunday),
       );
 
-      debugPrint('[Report] 생성 요청 완료');
       if (!mounted) return;
       AppToast.show(context, '리포트 생성 요청이 완료됐어요! 잠시 후 확인해 주세요.');
       setState(() => _isListLoading = true);
       await _fetchReportList();
-    } catch (e, st) {
+      if (mounted && _summaries.isNotEmpty) _enterHistory();
+    } catch (e) {
       debugPrint('[Report] 생성 요청 실패: $e');
-      debugPrint('[Report] $st');
-      if (mounted) {
-        AppToast.show(context, '리포트 생성 요청에 실패했어요.', isError: true);
-      }
+      if (mounted) AppToast.show(context, '리포트 생성 요청에 실패했어요.', isError: true);
     } finally {
       if (mounted) setState(() => _isGenerating = false);
     }
@@ -180,8 +176,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   void _onSelectReport(int index) {
     if (index == _selectedIndex) return;
     setState(() => _selectedIndex = index);
-    final reportId = _summaries[index].reportId;
-    _fetchDetail(reportId);
+    _fetchDetail(_summaries[index].reportId);
   }
 
   void _showAccountSheet() {
@@ -470,56 +465,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     );
   }
 
-  Widget _buildParentTipCard(String tip) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.tips_and_updates_outlined,
-                color: AppColors.primary,
-                size: 18,
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                '부모 팁',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            tip,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textMain,
-              height: 1.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLearningPatternCard(ReportDetail detail) {
     final pattern = detail.learningPattern;
+    final todos = _learningSummary?.todos;
+    final completedCount = todos?.completed ?? pattern.completedTodoCount;
+    final assignedCount = todos?.assigned;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -559,8 +510,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   child: _buildStatBox(
                     icon: Icons.show_chart,
                     label: '완료한 학습',
-                    value: '${pattern.completedTodoCount}',
-                    valueLarge: true,
+                    value: assignedCount != null
+                        ? '$completedCount / $assignedCount'
+                        : '$completedCount',
+                    valueLarge: assignedCount == null,
                   ),
                 ),
               ],
@@ -698,8 +651,90 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 height: 1.6,
               ),
             ),
+          // learning-summary 개념 목록
+          Builder(
+            builder: (_) {
+              final concepts = subject.key == 'math'
+                  ? _learningSummary?.math
+                  : _learningSummary?.korean;
+              if (concepts == null || concepts.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 14),
+                  Divider(height: 1, color: AppColors.borderLight),
+                  const SizedBox(height: 12),
+                  ...concepts.map(
+                    (c) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _buildConceptRow(c, subject.color),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildConceptRow(LearningConceptItem item, Color color) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            item.concept,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMain,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        _buildConceptBadge(
+          icon: Icons.check_rounded,
+          label: '${item.solved}문제',
+          color: color,
+        ),
+        const SizedBox(width: 6),
+        _buildConceptBadge(
+          icon: Icons.refresh_rounded,
+          label: '${item.avgAttempts.toStringAsFixed(1)}회',
+          color: AppColors.textSub,
+        ),
+        const SizedBox(width: 6),
+        _buildConceptBadge(
+          icon: Icons.lightbulb_outline,
+          label: '${item.avgHints.toStringAsFixed(1)}회',
+          color: AppColors.textSub,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConceptBadge({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 11, color: color),
+        const SizedBox(width: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 
@@ -789,7 +824,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     );
   }
 
-  Widget _buildKeywordsCard(List<String> keywords) {
+  Widget _buildLearnedExpressionsCard(List<String> expressions) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -809,10 +844,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.label_outline, color: AppColors.textSub, size: 18),
+              Icon(Icons.favorite_border, color: AppColors.primary, size: 18),
               SizedBox(width: 6),
               Text(
-                '이번 주 주요 키워드',
+                '이번 주 배운 감정 표현',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -825,7 +860,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: keywords.map((kw) {
+            children: expressions.map((expr) {
               return Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -839,7 +874,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   ),
                 ),
                 child: Text(
-                  kw,
+                  expr,
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -855,8 +890,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildParentGuideCard() {
-    final mission = _detail?.parentMission;
-    final hasPraise = mission?.isReady ?? false;
+    final mission = _parentMission;
+    final praiseText = (mission?.praisePhrase.isNotEmpty == true)
+        ? mission!.praisePhrase
+        : null;
+    final activityText = (mission?.activitySuggestion.isNotEmpty == true)
+        ? mission!.activitySuggestion
+        : null;
+
+    final isEmpty = praiseText == null && activityText == null;
 
     return Container(
       width: double.infinity,
@@ -905,50 +947,73 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildGuideSection(
-                  icon: Icons.format_quote_rounded,
-                  label: '이렇게 칭찬해주세요',
-                  badgeText: null,
-                  child: hasPraise
-                      ? Text(
-                          mission!.praisePhrase,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textMain,
-                            height: 1.6,
-                          ),
-                        )
-                      : const Text(
-                          '리포트 생성 후 칭찬 멘트가 준비돼요.',
+            child: isEmpty
+                ? Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: const Column(
+                      children: [
+                        Icon(
+                          Icons.hourglass_top_rounded,
+                          color: AppColors.primary,
+                          size: 28,
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          '행동 가이드를 준비 중이에요',
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSub,
-                            height: 1.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textMain,
                           ),
                         ),
-                ),
-                const SizedBox(height: 16),
-                _buildGuideSection(
-                  icon: Icons.theater_comedy_outlined,
-                  label: '같이 말해볼까요? ',
-                  badgeText: null,
-                  child: Text(
-                    _mockRoleplayTopic,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textMain,
-                      height: 1.7,
+                        SizedBox(height: 4),
+                        Text(
+                          '조금만 기다려 주세요!',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSub,
+                          ),
+                        ),
+                      ],
                     ),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (praiseText != null) ...[
+                        _buildGuideSection(
+                          icon: Icons.format_quote_rounded,
+                          label: '이렇게 칭찬해주세요',
+                          child: Text(
+                            praiseText,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textMain,
+                              height: 1.7,
+                            ),
+                          ),
+                        ),
+                        if (activityText != null) const SizedBox(height: 16),
+                      ],
+                      if (activityText != null)
+                        _buildGuideSection(
+                          icon: Icons.theater_comedy_outlined,
+                          label: '같이 말해볼까요?',
+                          child: Text(
+                            activityText,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textMain,
+                              height: 1.7,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -958,7 +1023,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Widget _buildGuideSection({
     required IconData icon,
     required String label,
-    required String? badgeText,
     required Widget child,
   }) {
     return Column(
@@ -976,24 +1040,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 color: AppColors.primary,
               ),
             ),
-            if (badgeText != null) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  badgeText,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
         const SizedBox(height: 8),
@@ -1095,6 +1141,14 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                           child: _buildSubjectCard(s),
                         ),
                       ),
+                      if (_learningSummary != null &&
+                          _learningSummary!.learnedExpressions.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        _buildLearnedExpressionsCard(
+                          _learningSummary!.learnedExpressions,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       if (_detail!.chatSafety != null) ...[
                         const SizedBox(height: 4),
                         _buildChatSafetyCard(_detail!.chatSafety!),
@@ -1188,12 +1242,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isGenerating
-                    ? null
-                    : () => AppToast.show(
-                        context,
-                        '이번 주 리포트는 아직 준비 중이에요. 조금만 기다려 주세요!',
-                      ),
+                onPressed: _isGenerating ? null : _onGenerateReport,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   disabledBackgroundColor: AppColors.primaryDisabled,
@@ -1315,7 +1364,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildParentGuideCard(),
-                      const SizedBox(height: 20),
+                      if (_detail!.parentMission?.isReady == true)
+                        const SizedBox(height: 20),
                       _buildSummaryCard(_detail!),
                       const SizedBox(height: 20),
                       _buildDetailSection(),

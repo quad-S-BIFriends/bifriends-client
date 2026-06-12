@@ -18,6 +18,31 @@ class ReportService {
     };
   }
 
+  Future<LearningSummary> getLearningSummary({
+    required int memberId,
+    required String from,
+    required String to,
+  }) async {
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}/api/v1/report/learning-summary',
+    ).replace(queryParameters: {
+      'memberId': memberId.toString(),
+      'from': from,
+      'to': to,
+    });
+    final headers = await _getHeaders();
+    debugPrint('[ReportService] GET $url');
+    final response = await http.get(url, headers: headers);
+    debugPrint('[ReportService] getLearningSummary status: ${response.statusCode}');
+    debugPrint('[ReportService] getLearningSummary response: ${utf8.decode(response.bodyBytes)}');
+    if (response.statusCode == 200) {
+      final json =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      return LearningSummary.fromJson(json);
+    }
+    throw Exception('학습 요약 조회 실패: ${response.statusCode}');
+  }
+
   Future<List<ReportSummary>> getReports() async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/reports');
     final headers = await _getHeaders();
