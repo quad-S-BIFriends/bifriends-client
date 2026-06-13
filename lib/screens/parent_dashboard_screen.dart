@@ -1248,46 +1248,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               ),
             ),
             const SizedBox(height: 28),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _WeekNavButton(
-                  icon: Icons.chevron_left,
-                  onTap: _isGenerating
-                      ? null
-                      : () => setState(() {
-                          _generateWeekStart = _generateWeekStart.subtract(
-                            const Duration(days: 7),
-                          );
-                        }),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  _weekLabel(_generateWeekStart),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMain,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                _WeekNavButton(
-                  icon: Icons.chevron_right,
-                  onTap:
-                      (_isGenerating ||
-                          !_generateWeekStart
-                              .add(const Duration(days: 7))
-                              .isBefore(DateTime.now()))
-                      ? null
-                      : () => setState(() {
-                          _generateWeekStart = _generateWeekStart.add(
-                            const Duration(days: 7),
-                          );
-                        }),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -1427,33 +1387,3 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 }
 
-class _WeekNavButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  const _WeekNavButton({required this.icon, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: enabled ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: enabled ? AppColors.borderLight : Colors.transparent,
-          ),
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: enabled ? AppColors.textMain : AppColors.borderLight,
-        ),
-      ),
-    );
-  }
-}
