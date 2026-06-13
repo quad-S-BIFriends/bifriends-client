@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/growth_report_model.dart';
-import '../models/guardian_mission_model.dart';
 import '../services/auth_service.dart';
 import '../services/report_service.dart';
 import '../services/member_service.dart';
@@ -25,7 +24,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   List<ReportSummary> _summaries = [];
   ReportDetail? _detail;
   LearningSummary? _learningSummary;
-  GuardianMission? _parentMission;
   String _childName = '';
   int? _memberId;
   int _selectedIndex = 0;
@@ -33,6 +31,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   bool _isListLoading = true;
   bool _isDetailLoading = false;
   bool _isGenerating = false;
+  bool _isPolling = false;
   bool _showingHistory = false;
   bool _isDetailExpanded = false;
 
@@ -97,7 +96,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     setState(() {
       _isDetailLoading = true;
       _learningSummary = null;
-      _parentMission = null;
     });
     try {
       debugPrint('[Report] 상세 조회 시작 reportId=$reportId');
@@ -107,21 +105,11 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       setState(() => _detail = detail);
 
       _fetchLearningSummary(detail.weekStart, detail.weekEnd);
-      _fetchParentMission(reportId);
     } catch (e, st) {
       debugPrint('[Report] 상세 조회 실패: $e');
       debugPrint('[Report] $st');
     } finally {
       if (mounted) setState(() => _isDetailLoading = false);
-    }
-  }
-
-  Future<void> _fetchParentMission(int reportId) async {
-    try {
-      final mission = await _reportService.getParentMission(reportId);
-      if (mounted) setState(() => _parentMission = mission);
-    } catch (e) {
-      debugPrint('[Report] parent-mission 조회 실패: $e');
     }
   }
 
@@ -148,23 +136,76 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Future<void> _onGenerateReport() async {
-    if (_isGenerating) return;
+    if (_isGenerating || _isPolling) return;
 
     setState(() => _isGenerating = true);
     try {
-      await _reportService.generateReport(weekStart: _fmt(_generateWeekStart));
+      final previousIds = _summaries.map((s) => s.reportId).toSet();
+      final accepted = await _reportService.generateReport(
+        weekStart: _fmt(_generateWeekStart),
+      );
 
       if (!mounted) return;
-      AppToast.show(context, '리포트 생성 요청이 완료됐어요! 잠시 후 확인해 주세요.');
-      setState(() => _isListLoading = true);
-      await _fetchReportList();
-      if (mounted && _summaries.isNotEmpty) _enterHistory();
+      if (!accepted) {
+        AppToast.show(context, '리포트 생성 요청에 실패했어요.', isError: true);
+        return;
+      }
+
+      setState(() {
+        _isGenerating = false;
+        _isPolling = true;
+      });
+      AppToast.show(context, '리포트를 생성 중이에요! 잠시 후 확인할 수 있어요.');
+      await _pollForNewReport(previousIds);
     } catch (e) {
       debugPrint('[Report] 생성 요청 실패: $e');
       if (mounted) AppToast.show(context, '리포트 생성 요청에 실패했어요.', isError: true);
     } finally {
-      if (mounted) setState(() => _isGenerating = false);
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+          _isPolling = false;
+        });
+      }
     }
+  }
+
+  Future<void> _pollForNewReport(Set<int> previousIds) async {
+    const maxAttempts = 20;
+    const interval = Duration(seconds: 3);
+
+    for (int i = 0; i < maxAttempts; i++) {
+      await Future.delayed(interval);
+      if (!mounted) return;
+
+      try {
+        final summaries = await _reportService.getReports();
+        summaries.sort((a, b) => b.weekStart.compareTo(a.weekStart));
+
+        final newMatches =
+            summaries.where((s) => !previousIds.contains(s.reportId)).toList();
+        if (newMatches.isNotEmpty) {
+          setState(() {
+            _summaries = summaries;
+            _isPolling = false;
+            _showingHistory = true;
+            _selectedIndex = 0;
+          });
+          _fetchDetail(newMatches.first.reportId);
+          return;
+        }
+      } catch (e) {
+        debugPrint('[Report] polling 실패: $e');
+      }
+    }
+
+    // 60초 후에도 미등장 → 목록 새로고침 후 안내
+    if (!mounted) return;
+    setState(() => _isPolling = false);
+    await _fetchReportList();
+    if (!mounted) return;
+    if (_summaries.isNotEmpty) _enterHistory();
+    AppToast.show(context, '리포트 생성 중이에요. 잠시 후 다시 확인해 주세요.');
   }
 
   void _enterHistory() {
@@ -175,11 +216,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     if (_summaries.isNotEmpty && _detail?.reportId != _summaries[0].reportId) {
       _fetchDetail(_summaries[0].reportId);
     }
-  }
-
-  bool _isUnpreparedWeek(int index) {
-    if (_summaries.isEmpty || index >= _summaries.length) return false;
-    return _summaries[index].weekStart == '2026-06-08';
   }
 
   void _onSelectReport(int index) {
@@ -899,7 +935,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildParentGuideCard() {
-    final mission = _parentMission;
+    final mission = _detail?.parentMission;
     final praiseText = (mission?.praisePhrase.isNotEmpty == true)
         ? mission!.praisePhrase
         : null;
@@ -1177,44 +1213,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     );
   }
 
-  Widget _buildUnpreparedView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.hourglass_empty_rounded,
-              size: 56,
-              color: AppColors.borderLight,
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              '아직 준비되지 않았어요',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textMain,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '이번 주 리포트는 아직 분석 중이에요.\n조금만 기다려 주세요!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSub,
-                height: 1.6,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildGenerationView() {
     return Center(
       child: Padding(
@@ -1251,7 +1249,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isGenerating ? null : _onGenerateReport,
+                onPressed: (_isGenerating || _isPolling) ? null : _onGenerateReport,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   disabledBackgroundColor: AppColors.primaryDisabled,
@@ -1263,7 +1261,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   elevation: 4,
                   shadowColor: Colors.black.withValues(alpha: 0.2),
                 ),
-                child: _isGenerating
+                child: (_isGenerating || _isPolling)
                     ? const SizedBox(
                         height: 20,
                         width: 20,
@@ -1337,8 +1335,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               ? const Center(
                   child: CircularProgressIndicator(color: AppColors.primary),
                 )
-              : _isUnpreparedWeek(_selectedIndex)
-              ? _buildUnpreparedView()
               : _detail == null
               ? Center(
                   child: Column(

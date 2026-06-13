@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
 import '../models/growth_report_model.dart';
-import '../models/guardian_mission_model.dart';
 
 class ReportService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
@@ -75,50 +74,7 @@ class ReportService {
     throw Exception('리포트 상세 조회 실패: ${response.statusCode}');
   }
 
-  Future<GuardianMission> getParentMission(int reportId) async {
-    final url = Uri.parse(
-      '${ApiConfig.baseUrl}/api/v1/reports/$reportId/parent-mission',
-    );
-    final headers = await _getHeaders();
-    final response = await http.post(url, headers: headers);
-    if (response.statusCode == 200) {
-      final json =
-          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-      return GuardianMission.fromJson(json);
-    }
-    throw Exception('보호자 미션 조회 실패: ${response.statusCode}');
-  }
-
-  Future<ChatSafetyDetail?> fetchWeeklySafetyReport({
-    required int memberId,
-    required String weekStart,
-    required String weekEnd,
-  }) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/weekly-safety-report');
-    final headers = await _getHeaders();
-    final body = jsonEncode({
-      'member_id': memberId,
-      'week_start': weekStart,
-      'week_end': weekEnd,
-    });
-    final response = await http.post(url, headers: headers, body: body);
-    if (response.statusCode == 200) {
-      final json =
-          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-      if (json.containsKey('safety_signal')) {
-        return ChatSafetyDetail(
-          signal: ChatSafetyLevelExt.fromString(
-            json['safety_signal'] as String? ?? '',
-          ),
-          score: (json['score'] as num?)?.toInt() ?? 0,
-          reasonSummary: json['reason_summary'] as String? ?? '',
-        );
-      }
-    }
-    return null;
-  }
-
-  Future<void> generateReport({required String weekStart}) async {
+  Future<bool> generateReport({required String weekStart}) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/reports/generate');
     final headers = await _getHeaders();
     final body = jsonEncode({'week_start': weekStart});
@@ -130,5 +86,7 @@ class ReportService {
     if (response.statusCode != 200) {
       throw Exception('리포트 생성 실패: ${response.statusCode} ${utf8.decode(response.bodyBytes)}');
     }
+    final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    return json['accepted'] as bool? ?? false;
   }
 }
