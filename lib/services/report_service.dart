@@ -118,30 +118,17 @@ class ReportService {
     return null;
   }
 
-  Future<bool> fetchWeeklyReport({
-    required int memberId,
-    required String weekStart,
-    required String weekEnd,
-    String sections = '',
-  }) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/weekly-report');
+  Future<void> generateReport({required String weekStart}) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/reports/generate');
     final headers = await _getHeaders();
-    final body = jsonEncode({
-      'member_id': memberId,
-      'week_start': weekStart,
-      'week_end': weekEnd,
-      'sections': sections,
-    });
+    final body = jsonEncode({'week_start': weekStart});
     debugPrint('[ReportService] POST $url');
     debugPrint('[ReportService] body: $body');
     final response = await http.post(url, headers: headers, body: body);
-    debugPrint('[ReportService] status: ${response.statusCode}');
-    debugPrint('[ReportService] response: ${utf8.decode(response.bodyBytes)}');
-    if (response.statusCode == 200) {
-      final json =
-          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-      return json['received'] as bool? ?? false;
+    debugPrint('[ReportService] generateReport status: ${response.statusCode}');
+    debugPrint('[ReportService] generateReport response: ${utf8.decode(response.bodyBytes)}');
+    if (response.statusCode != 200) {
+      throw Exception('리포트 생성 실패: ${response.statusCode} ${utf8.decode(response.bodyBytes)}');
     }
-    throw Exception('weekly-report 실패: ${response.statusCode} ${utf8.decode(response.bodyBytes)}');
   }
 }
