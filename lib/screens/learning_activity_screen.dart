@@ -421,7 +421,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
                 nextCycleNumber: _currentCycleIdx + 1,
                 assetImagePath: widget.subject == 'korean'
                     ? 'assets/images/study_korean/grade${widget.grade}/'
-                        'passage_grade${widget.grade}_step${widget.levelData.level}.png'
+                        'passage_grade${widget.grade}_step${widget.levelData.level}.webp'
                     : null,
                 onStart: () => setState(() => _showPassageReview = false),
               ),
@@ -433,13 +433,16 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
 
   String _resolveConceptImagePath(String image) {
     if (image.isEmpty) return '';
-    if (image.startsWith('assets/')) return image;
+    if (image.startsWith('assets/')) {
+      return image.replaceAll('.png', '.webp');
+    }
     final folder = widget.subject == 'korean' ? 'study_korean' : 'study_math';
+    final baseName = image.replaceAll('.png', '');
     final filename =
-        (widget.subject == 'math' && !RegExp(r'^g\d_').hasMatch(image))
-        ? 'g${widget.grade}_$image'
-        : image;
-    return 'assets/images/$folder/grade${widget.grade}/$filename';
+        (widget.subject == 'math' && !RegExp(r'^g\d_').hasMatch(baseName))
+        ? 'g${widget.grade}_$baseName'
+        : baseName;
+    return 'assets/images/$folder/grade${widget.grade}/$filename.webp';
   }
 
   // grade4 step1 cycle2 전용 시각화 이미지 경로 (해당 조건 외에는 null 반환)
@@ -449,7 +452,7 @@ class _LearningActivityScreenState extends State<LearningActivityScreen> {
     if (widget.levelData.level != 1) return null;
     if (_currentCycleIdx != 1) return null;
     return 'assets/images/study_math/grade4/'
-        'g4_step1_cycle2_q${_currentQuestionIdx + 1}.png';
+        'g4_step1_cycle2_q${_currentQuestionIdx + 1}.webp';
   }
 
   Widget _buildTopBar() {
