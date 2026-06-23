@@ -25,7 +25,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   ReportDetail? _detail;
   LearningSummary? _learningSummary;
   String _childName = '';
-  int? _memberId;
   int _selectedIndex = 0;
 
   bool _isListLoading = true;
@@ -72,7 +71,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       if (mounted) {
         setState(() {
           _childName = member.nickname ?? member.name;
-          _memberId = member.id;
         });
       }
     } catch (_) {}
@@ -103,8 +101,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       debugPrint('[Report] 상세 조회 성공');
       if (!mounted) return;
       setState(() => _detail = detail);
-
-      _fetchLearningSummary(detail.weekStart, detail.weekEnd);
     } catch (e, st) {
       debugPrint('[Report] 상세 조회 실패: $e');
       debugPrint('[Report] $st');
@@ -113,25 +109,28 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     }
   }
 
-  Future<void> _fetchLearningSummary(String weekStart, String weekEnd) async {
-    final memberId = _memberId;
-    if (memberId == null) return;
+  Future<void> _fetchParentMission(int reportId) async {
     try {
-      final summary = await _reportService.getLearningSummary(
-        memberId: memberId,
-        from: weekStart,
-        to: weekEnd,
-      );
-      if (mounted) {
-        setState(() {
-          _learningSummary = summary;
-          if (summary.nickname.isNotEmpty && _childName.isEmpty) {
-            _childName = summary.nickname;
-          }
-        });
-      }
+      final mission = await _reportService.getParentMission(reportId);
+      if (!mounted) return;
+      setState(() {
+        _detail = _detail == null
+            ? null
+            : ReportDetail(
+                reportId: _detail!.reportId,
+                weekStart: _detail!.weekStart,
+                weekEnd: _detail!.weekEnd,
+                growth: _detail!.growth,
+                learningPattern: _detail!.learningPattern,
+                learningStatus: _detail!.learningStatus,
+                chatSafety: _detail!.chatSafety,
+                parentMission: mission,
+                keywords: _detail!.keywords,
+              );
+      });
     } catch (e) {
-      debugPrint('[Report] learning-summary 조회 실패: $e');
+      debugPrint('[Report] parent-mission 조회 실패: $e');
+      if (mounted) AppToast.show(context, '미션을 불러오지 못했어요.', isError: true);
     }
   }
 
@@ -996,29 +995,46 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 ? Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: const Column(
+                    child: Column(
                       children: [
-                        Icon(
-                          Icons.hourglass_top_rounded,
+                        const Icon(
+                          Icons.waving_hand_outlined,
                           color: AppColors.primary,
                           size: 28,
                         ),
-                        SizedBox(height: 10),
-                        Text(
-                          '행동 가이드를 준비 중이에요',
+                        const SizedBox(height: 10),
+                        const Text(
+                          '이번 주 아이와 함께할 미션을 받아보세요!',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textMain,
                           ),
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          '조금만 기다려 주세요!',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSub,
+                        const SizedBox(height: 14),
+                        ElevatedButton(
+                          onPressed: _detail == null
+                              ? null
+                              : () => _fetchParentMission(_detail!.reportId),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            '미션 받기',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ],

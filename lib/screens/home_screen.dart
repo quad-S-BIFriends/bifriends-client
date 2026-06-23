@@ -25,7 +25,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _userName = '친구';
-  int? _memberId;
   String _greetingMessage = '';
   int _consecutiveDays = 0;
   int _currentLevel = 1;
@@ -102,8 +101,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final member = await _memberService.getMe();
       if (mounted) {
         setState(() {
-          _memberId = member.id;
-          // Home API 실패 시 fallback으로 이름 설정
           if (_userName == '친구') {
             _userName = member.nickname ?? member.name;
           }
@@ -229,12 +226,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleTodoTap(TodoItem todo) {
     if (todo.isCompleted) return;
 
-    // USER가 직접 추가한 todo는 탭 즉시 완료
-    if (todo.isUserCreated) {
-      setState(() => todo.isCompleted = true);
-      if (todo.id != null) _completeTodoSafely(todo);
-    }
-
     if (todo.learningType != null) {
       final ismath = todo.learningType == LearningType.MATH;
       final nav = Navigator.of(context);
@@ -260,89 +251,6 @@ class _HomeScreenState extends State<HomeScreen> {
         todo.targetTabIndex!,
         todoId: (!todo.isCompleted && todo.id != null) ? todo.id : null,
       );
-    }
-  }
-
-  void _showTodoSheet({TodoItem? existing}) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => _TodoSheet(
-        existing: existing,
-        onSave: (title) async {
-          Navigator.pop(ctx);
-          if (existing == null) {
-            await _createTodo(title);
-          } else {
-            await _updateTodo(existing, title);
-          }
-        },
-      ),
-    );
-  }
-
-  Future<void> _createTodo(String title) async {
-    final localTodo = TodoItem(
-      title: title,
-      emoji: '',
-      source: TodoSource.USER,
-    );
-    setState(() => _todos.add(localTodo));
-
-    try {
-      final saved = await _homeService.createTodo(
-        title: title,
-        memberId: _memberId,
-      );
-      if (mounted) {
-        setState(() {
-          final idx = _todos.indexOf(localTodo);
-          if (idx >= 0) _todos[idx] = saved;
-        });
-      }
-    } catch (_) {
-      // BE 미구현 구간에서는 로컬 항목 유지
-    }
-  }
-
-  Future<void> _updateTodo(TodoItem todo, String title) async {
-    final idx = _todos.indexOf(todo);
-    final updated = TodoItem(
-      id: todo.id,
-      title: title,
-      emoji: todo.emoji,
-      isCompleted: todo.isCompleted,
-      source: TodoSource.USER,
-    );
-    setState(() => _todos[idx] = updated);
-
-    try {
-      if (todo.id != null) {
-        await _homeService.updateTodo(todoId: todo.id!, title: title);
-      }
-    } catch (_) {
-      // BE 미구현 구간에서는 로컬 변경 유지
-    }
-  }
-
-  Future<void> _deleteTodo(TodoItem todo) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.4),
-      builder: (ctx) => _DeleteConfirmDialog(todoTitle: todo.title),
-    );
-    if (confirmed != true) return;
-
-    final idx = _todos.indexOf(todo);
-    setState(() => _todos.removeAt(idx));
-
-    try {
-      if (todo.id != null && _memberId != null) {
-        await _homeService.deleteTodo(todo.id!, memberId: _memberId!);
-      }
-    } catch (_) {
-      // BE 미구현 구간에서는 로컬 삭제 유지
     }
   }
 
@@ -720,46 +628,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                '오늘의 할 일',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textMain,
-                ),
-              ),
-              GestureDetector(
-                onTap: () => _showTodoSheet(),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add, color: Colors.white, size: 16),
-                      SizedBox(width: 4),
-                      Text(
-                        '추가',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          const Text(
+            '오늘의 할 일',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textMain,
+            ),
           ),
           const SizedBox(height: 16),
           ...List.generate(_todos.length, (index) {
@@ -810,173 +685,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    todo.title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: todo.isCompleted
-                          ? AppColors.textSub
-                          : AppColors.textMain,
-                      decoration: todo.isCompleted
-                          ? TextDecoration.lineThrough
-                          : null,
-                      decorationColor: AppColors.textSub,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (todo.isUserCreated) ...[
-              const SizedBox(width: 4),
-              _buildTodoAction(
-                icon: Icons.edit_outlined,
-                onTap: () => _showTodoSheet(existing: todo),
-              ),
-            ],
-            if (todo.canDelete) ...[
-              const SizedBox(width: 2),
-              _buildTodoAction(
-                icon: Icons.delete_outline,
-                onTap: () => _deleteTodo(todo),
-                isDestructive: true,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTodoAction({
-    required IconData icon,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Icon(
-          icon,
-          size: 18,
-          color: isDestructive ? Colors.red.shade300 : AppColors.textSub,
-        ),
-      ),
-    );
-  }
-}
-
-class _TodoSheet extends StatefulWidget {
-  final TodoItem? existing;
-  final void Function(String title) onSave;
-
-  const _TodoSheet({this.existing, required this.onSave});
-
-  @override
-  State<_TodoSheet> createState() => _TodoSheetState();
-}
-
-class _TodoSheetState extends State<_TodoSheet> {
-  late final TextEditingController _titleController;
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController(
-      text: widget.existing?.title ?? '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isEdit = widget.existing != null;
-    final canSave = _titleController.text.trim().isNotEmpty;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.all(Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isEdit ? '할 일 수정하기' : '할 일 추가하기',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textMain,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.cardLight,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: TextField(
-                controller: _titleController,
-                autofocus: true,
-                maxLength: 40,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textMain,
-                ),
-                decoration: const InputDecoration(
-                  hintText: '할 일을 입력해 주세요',
-                  hintStyle: TextStyle(color: AppColors.textSub),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  counterText: '',
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: canSave
-                    ? () => widget.onSave(_titleController.text.trim())
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.primaryDisabled,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  isEdit ? '수정하기' : '추가하기',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
+              child: Text(
+                todo.title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: todo.isCompleted
+                      ? AppColors.textSub
+                      : AppColors.textMain,
+                  decoration: todo.isCompleted
+                      ? TextDecoration.lineThrough
+                      : null,
+                  decorationColor: AppColors.textSub,
                 ),
               ),
             ),
@@ -985,110 +705,5 @@ class _TodoSheetState extends State<_TodoSheet> {
       ),
     );
   }
-}
 
-class _DeleteConfirmDialog extends StatelessWidget {
-  final String todoTitle;
-
-  const _DeleteConfirmDialog({required this.todoTitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEDED),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const Icon(
-                Icons.close_rounded,
-                color: Color(0xFFE53935),
-                size: 34,
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              '정말 삭제할까? 😮',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textMain,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              '"$todoTitle"\n미션을 목록에서 지울게!',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSub,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context, false),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardLight,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          '아니, 둘래',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textSub,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context, true),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE53935),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          '응, 삭제해줘!',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

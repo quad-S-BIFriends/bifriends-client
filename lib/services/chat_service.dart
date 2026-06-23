@@ -100,7 +100,7 @@ class ChatService {
 
   Future<List<ChatMessage>> getSessionMessages(String sessionId) async {
     final url = Uri.parse(
-      '${ApiConfig.baseUrl}/api/v1/chat/my/sessions/$sessionId/messages',
+      '${ApiConfig.baseUrl}/api/v1/chat/sessions/$sessionId',
     );
     final response = await http.get(url, headers: await _getHeaders());
     debugPrint('[ChatService] getSessionMessages status: ${response.statusCode}');

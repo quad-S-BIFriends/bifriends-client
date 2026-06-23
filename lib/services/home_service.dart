@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
 import '../models/home_model.dart';
-import '../models/todo_model.dart';
 
 class HomeService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
@@ -31,52 +30,6 @@ class HomeService {
       return HomeResponse.fromJson(jsonData as Map<String, dynamic>);
     } else {
       throw Exception('홈 정보 조회 실패: ${response.statusCode}');
-    }
-  }
-
-  Future<TodoItem> createTodo({required String title, int? memberId}) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/todos');
-    final headers = await _getHeaders();
-    final body = <String, dynamic>{'title': title};
-    if (memberId != null) body['memberId'] = memberId;
-    final response = await http.post(
-      url,
-      headers: headers,
-      body: jsonEncode(body),
-    );
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final jsonData = jsonDecode(utf8.decode(response.bodyBytes));
-      return TodoItem.fromResponse(
-        TodoResponse.fromJson(jsonData as Map<String, dynamic>),
-      );
-    }
-    throw Exception('할 일 생성 실패: ${response.statusCode}');
-  }
-
-  Future<void> updateTodo({
-    required String todoId,
-    required String title,
-  }) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/todos/$todoId');
-    final headers = await _getHeaders();
-    final response = await http.patch(
-      url,
-      headers: headers,
-      body: jsonEncode({'title': title}),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('할 일 수정 실패: ${response.statusCode}');
-    }
-  }
-
-  Future<void> deleteTodo(String todoId, {required int memberId}) async {
-    final url = Uri.parse(
-      '${ApiConfig.baseUrl}/api/v1/todos/$todoId',
-    ).replace(queryParameters: {'memberId': memberId.toString()});
-    final headers = await _getHeaders();
-    final response = await http.delete(url, headers: headers);
-    if (response.statusCode != 200 && response.statusCode != 204) {
-      throw Exception('할 일 삭제 실패: ${response.statusCode}');
     }
   }
 
