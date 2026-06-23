@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "416824494386-3gakjvn067j29p8jet2b0nc5oln015kn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bifriends_client",
+            "certificate_hash": "48530ec8af846e1fb82057671280b3d0964dbd2b"
+          }
+        },
+        {
+          "client_id": "416824494386-5tjcafn8c2lpvdgon7pe6tm3cjqkt024.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bifriends_client",
+            "certificate_hash": "6fbc73fd354a54486924d40fc8c853d235c05858"
+          }
+        },
+        {
           "client_id": "416824494386-n4irc28cc4bn34gp5r22meuo9b74jd4j.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -29,6 +45,13 @@
             {
               "client_id": "416824494386-n4irc28cc4bn34gp5r22meuo9b74jd4j.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "416824494386-jbq8lpp2hgggupasaogudatbq8dgog5k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.bifriendsClient"
+              }
             }
           ]
         }

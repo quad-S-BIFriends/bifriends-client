@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:bifriends_client/firebase_options.dart';
 import '../config/api_config.dart';
 
 class AuthResponse {
@@ -39,32 +37,37 @@ class AuthResponse {
 
 class AuthService {
   FirebaseAuth get _auth => FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: Platform.isIOS ? DefaultFirebaseOptions.ios.iosClientId : null,
-  );
+  // Android: google-services.json 자동 사용, iOS: GoogleService-Info.plist 자동 사용
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   Future<AuthResponse?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        return null;
+      final String? firebaseIdToken;
+
+      if (kIsWeb) {
+        // 웹: FirebaseAuth 팝업 플로우 사용 (google_sign_in 미사용)
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        final UserCredential userCredential =
+            await _auth.signInWithPopup(googleProvider);
+        firebaseIdToken = await userCredential.user?.getIdToken();
+      } else {
+        // 모바일: google_sign_in → Firebase credential
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) return null;
+
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        final UserCredential userCredential =
+            await _auth.signInWithCredential(credential);
+        firebaseIdToken = await userCredential.user?.getIdToken();
       }
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final String? idToken = googleAuth.idToken;
-
-      if (idToken == null) {
-        throw Exception('구글 로그인 실패: idToken을 가져올 수 없습니다.');
-      }
-
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
-      final String? firebaseIdToken = await userCredential.user?.getIdToken();
 
       if (firebaseIdToken == null) {
         throw Exception('Firebase 로그인 실패: Firebase idToken을 가져올 수 없습니다.');
@@ -102,7 +105,7 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    if (!kIsWeb) await _googleSignIn.signOut();
     await _auth.signOut();
     await _storage.delete(key: 'accessToken');
     await _storage.delete(key: 'refreshToken');
