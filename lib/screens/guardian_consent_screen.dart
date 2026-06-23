@@ -226,7 +226,7 @@ class _GuardianConsentScreenState extends State<GuardianConsentScreen> {
                           ),
                         )
                       : const Text(
-                    '보호자 휴대폰 인증하기',
+                    '약관 동의 완료',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
