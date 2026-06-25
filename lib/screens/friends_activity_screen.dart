@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/friends_activity_model.dart';
 import '../models/mind_model.dart';
+import '../services/member_service.dart';
 import '../services/mind_service.dart';
 import '../theme/app_colors.dart';
 
@@ -24,6 +25,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
   int _currentStep = 0;
   bool _showSuccessOverlay = false;
   bool _isSaving = false;
+  String _nickname = '친구';
 
   // Step 2 state
   int _step2SelectedIndex = -1;
@@ -49,7 +51,22 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
   void initState() {
     super.initState();
     _step3PageController = PageController();
+    _fetchNickname();
   }
+
+  Future<void> _fetchNickname() async {
+    try {
+      final member = await MemberService().getMe();
+      debugPrint('[FriendsActivity] nickname=${member.nickname}, name=${member.name}');
+      if (mounted) {
+        setState(() => _nickname = member.nickname ?? member.name);
+      }
+    } catch (e) {
+      debugPrint('[FriendsActivity] _fetchNickname 실패: $e');
+    }
+  }
+
+  String _n(String text) => text.replaceAll('{nickname}', _nickname);
 
   @override
   void dispose() {
@@ -282,7 +299,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
               ],
             ),
             child: Text(
-              widget.scenario.situation,
+              _n(widget.scenario.situation),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -441,7 +458,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
         child: Column(
           children: [
             Text(
-              '"${step1.expression}"',
+              '"${_n(step1.expression)}"',
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -454,11 +471,11 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
             const SizedBox(height: 16),
             _buildCharacterImage(step1.imageUrl, imageType: 'body'),
             const SizedBox(height: 24),
-            _buildSectionBlock(label: '우리 몸의 느낌', content: step1.bodySensation),
+            _buildSectionBlock(label: '우리 몸의 느낌', content: _n(step1.bodySensation)),
             const SizedBox(height: 16),
             _buildSectionBlock(
               label: '이럴 때 이런 마음이 들어',
-              content: step1.situationExample,
+              content: _n(step1.situationExample),
             ),
             const SizedBox(height: 28),
             SizedBox(
@@ -479,7 +496,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
                 ),
                 child: Text(
                   step1.nextButtonText.isNotEmpty
-                      ? step1.nextButtonText
+                      ? _n(step1.nextButtonText)
                       : '이해했어! 🎯',
                   style: const TextStyle(
                     fontSize: 16,
@@ -587,13 +604,13 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
               _step2SelectedIndex != -1 &&
               _step2SelectedIndex != data.correctIndex) ...[
             const SizedBox(height: 12),
-            _buildWrongExplanation(data.choices[_step2SelectedIndex].feedback),
+            _buildWrongExplanation(_n(data.choices[_step2SelectedIndex].feedback)),
             const SizedBox(height: 8),
-            _buildRetryHint(data.retryMessage),
+            _buildRetryHint(_n(data.retryMessage)),
           ],
           if (_step2Evaluated && _step2IsCorrect) ...[
             const SizedBox(height: 12),
-            _buildSuccessBox(data.choices[data.correctIndex].feedback),
+            _buildSuccessBox(_n(data.choices[data.correctIndex].feedback)),
           ],
           const SizedBox(height: 16),
           _buildStep2ActionButton(data),
@@ -637,7 +654,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
                   const Text('👀 ', style: TextStyle(fontSize: 16)),
                   Expanded(
                     child: Text(
-                      data.visualClue,
+                      _n(data.visualClue),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -670,7 +687,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
         ],
       ),
       child: Text(
-        '"$question"',
+        '"${_n(question)}"',
         textAlign: TextAlign.center,
         style: const TextStyle(
           fontSize: 15,
@@ -742,7 +759,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           children: [
             Expanded(
               child: Text(
-                choice.text,
+                _n(choice.text),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -876,7 +893,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           child: Text(
             isConfirmed
                 ? (data.nextButtonText.isNotEmpty
-                      ? data.nextButtonText
+                      ? _n(data.nextButtonText)
                       : '다음으로')
                 : '이 마음 같아! 💕',
             key: ValueKey(isConfirmed),
@@ -911,15 +928,15 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
               _step3SelectedIndex != data.correctIndex) ...[
             const SizedBox(height: 12),
             _buildStep3WrongGuidance(
-              data.choices[_step3SelectedIndex].feedback,
+              _n(data.choices[_step3SelectedIndex].feedback),
             ),
             const SizedBox(height: 8),
-            _buildRetryHint(data.retryMessage),
+            _buildRetryHint(_n(data.retryMessage)),
           ],
           if (_step3Evaluated && _step3IsCorrect) ...[
             const SizedBox(height: 12),
             _buildStep3CorrectExplanation(
-              data.choices[data.correctIndex].feedback,
+              _n(data.choices[data.correctIndex].feedback),
             ),
           ],
           const SizedBox(height: 16),
@@ -1065,7 +1082,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
               child: Text(
-                data.comic[_step3Panel].text,
+                _n(data.comic[_step3Panel].text),
                 key: ValueKey(_step3Panel),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
@@ -1224,7 +1241,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                choice.text,
+                _n(choice.text),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -1331,7 +1348,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           child: Text(
             isConfirmed
                 ? (data.nextButtonText.isNotEmpty
-                      ? data.nextButtonText
+                      ? _n(data.nextButtonText)
                       : '다음 이야기 보기')
                 : '이게 이유야! 🔍',
             key: ValueKey(isConfirmed),
@@ -1366,14 +1383,14 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
               _step4SelectedIndex != data.correctIndex) ...[
             const SizedBox(height: 12),
             _buildStep4WrongExplanation(
-              data.choices[_step4SelectedIndex].feedback,
+              _n(data.choices[_step4SelectedIndex].feedback),
             ),
             const SizedBox(height: 8),
-            _buildRetryHint(data.retryMessage),
+            _buildRetryHint(_n(data.retryMessage)),
           ],
           if (_step4Evaluated && _step4IsCorrect) ...[
             const SizedBox(height: 12),
-            _buildSuccessBox(data.successMessage),
+            _buildSuccessBox(_n(data.successMessage)),
           ],
           const SizedBox(height: 16),
           _buildStep4ActionButton(data),
@@ -1422,7 +1439,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
               ],
             ),
             child: Text(
-              message,
+              _n(message),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -1527,7 +1544,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                choice.text,
+                _n(choice.text),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -1603,7 +1620,7 @@ class _FriendsActivityScreenState extends State<FriendsActivityScreen> {
           child: Text(
             isConfirmed
                 ? (data.completeButtonText.isNotEmpty
-                      ? data.completeButtonText
+                      ? _n(data.completeButtonText)
                       : '완료! 🎯')
                 : '이렇게 말할게요! 💬',
             key: ValueKey(isConfirmed),
