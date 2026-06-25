@@ -5,7 +5,6 @@ import '../models/member_model.dart';
 import '../services/chat_service.dart';
 import '../services/home_service.dart';
 import '../services/member_service.dart';
-import '../services/stt_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/korean_learning_roadmap.dart';
@@ -31,7 +30,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
   final ChatService _chatService = ChatService();
   final HomeService _homeService = HomeService();
   final MemberService _memberService = MemberService();
-  final SttService _sttService = SttService();
 
   String? _pendingTodoId;
 
@@ -39,8 +37,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
   late String _sessionId;
   bool _isHistoryOpen = false;
   bool _isSessionsExpanded = false;
-  bool _isListening = false;
-  bool _isTranscribing = false;
   bool _isLeoTyping = false;
   bool _isSessionsLoading = false;
 
@@ -76,7 +72,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    _sttService.dispose();
     super.dispose();
   }
 
@@ -120,29 +115,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
       cta: cta,
       todosCreated: todosCreated,
     );
-  }
-
-  Future<void> _toggleListening() async {
-    if (_isTranscribing) return;
-
-    if (_isListening) {
-      setState(() {
-        _isListening = false;
-        _isTranscribing = true;
-      });
-      final result = await _sttService.stopAndTranscribe();
-      setState(() {
-        _isTranscribing = false;
-        if (result != null && result.isNotEmpty) {
-          _messageController.text = result;
-        }
-      });
-    } else {
-      final hasPermission = await _sttService.hasPermission();
-      if (!hasPermission) return;
-      await _sttService.startRecording();
-      setState(() => _isListening = true);
-    }
   }
 
   Future<void> _sendMessage() async {
@@ -196,7 +168,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       if (mounted) {
         setState(
           () => _messages.add(
-            _makeMessage('err', '레오가 지금 답하기 어려워요 😅\n잠시 후 다시 말 걸어줘!', false),
+            _makeMessage('err', '[디버그] 오류: $e', false),
           ),
         );
       }
@@ -425,16 +397,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(
-              Icons.volume_up_outlined,
-              color: AppColors.textMain,
-              size: 24,
-            ),
-            onPressed: () {
-              // TODO: TTS 토글
-            },
-          ),
+          const SizedBox(width: 48),
         ],
       ),
     );
@@ -660,23 +623,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: _isTranscribing
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.primary,
-                    ),
-                  )
-                : Icon(
-                    _isListening ? Icons.mic : Icons.mic_none,
-                    color: _isListening ? AppColors.primary : AppColors.textSub,
-                    size: 26,
-                  ),
-            onPressed: _toggleListening,
-          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
