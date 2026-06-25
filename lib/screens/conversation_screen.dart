@@ -168,7 +168,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       if (mounted) {
         setState(
           () => _messages.add(
-            _makeMessage('err', '[디버그] 오류: $e', false),
+            _makeMessage('err', '레오가 지금 좀 바빠 😅\n조금 있다가 다시 말 걸어줄래?', false),
           ),
         );
       }

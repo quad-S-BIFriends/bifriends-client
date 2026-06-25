@@ -70,7 +70,9 @@ class ChatService {
         rethrow;
       }
     }
-    throw Exception('메시지 전송 실패: ${response.statusCode}\n${utf8.decode(response.bodyBytes)}');
+    throw Exception(
+      '메시지 전송 실패: ${response.statusCode}\n${utf8.decode(response.bodyBytes)}',
+    );
   }
 
   Future<List<ChatSession>> getMySessions() async {
@@ -103,7 +105,9 @@ class ChatService {
       '${ApiConfig.baseUrl}/api/v1/chat/sessions/$sessionId',
     );
     final response = await http.get(url, headers: await _getHeaders());
-    debugPrint('[ChatService] getSessionMessages status: ${response.statusCode}');
+    debugPrint(
+      '[ChatService] getSessionMessages status: ${response.statusCode}',
+    );
     if (response.statusCode == 200) {
       final data =
           jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
