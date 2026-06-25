@@ -70,7 +70,7 @@ class ChatService {
         rethrow;
       }
     }
-    throw Exception('메시지 전송 실패: ${response.statusCode}');
+    throw Exception('메시지 전송 실패: ${response.statusCode}\n${utf8.decode(response.bodyBytes)}');
   }
 
   Future<List<ChatSession>> getMySessions() async {
